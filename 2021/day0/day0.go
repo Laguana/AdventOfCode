@@ -1,9 +1,13 @@
 package main
 
-import(
+import (
 	"fmt"
 )
 
+func GetWhoToHello() string {
+	return "world"
+}
+
 func main() {
-	fmt.Println("Hello world!")
+	fmt.Printf("Hello %s!\n", GetWhoToHello())
 }
