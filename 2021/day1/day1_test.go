@@ -12,6 +12,7 @@ func TestDay1Part1Sample(t *testing.T) {
 	intInput, err := ParseInputs(sampleInput)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	increments := CountIncrements(intInput)
@@ -24,11 +25,13 @@ func TestDay1Part1Input(t *testing.T) {
 	d1i, err := os.Open("p1.input.txt")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	defer d1i.Close()
 	increments, err := Part1(d1i)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if increments != 1832 {
 		t.Errorf("Expected 1832 increments but found %d", increments)
@@ -41,6 +44,7 @@ func TestDay1Part2Sample(t *testing.T) {
 	intInput, err := ParseInputs(sampleInput)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	increments := CountSlidingIncrements(intInput)

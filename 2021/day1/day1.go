@@ -1,7 +1,7 @@
 package day1
 
 import (
-	"bufio"
+	"AoC2021/common"
 	"fmt"
 	"io"
 	"strconv"
@@ -36,19 +36,7 @@ func ParseInputs(input []string) ([]int, error) {
 }
 
 func Part1(r io.Reader) (int, error) {
-
-	inputs := make([]string, 0)
-	scanner := bufio.NewScanner(r)
-
-	for {
-		scanner.Scan()
-		text := scanner.Text()
-		if len(text) == 0 {
-			break
-		}
-
-		inputs = append(inputs, text)
-	}
+	inputs := common.ReadLinesToSlice(r)
 
 	intInputs, err := ParseInputs(inputs)
 	if err != nil {
@@ -74,18 +62,7 @@ func CountSlidingIncrements(measurements []int) int {
 }
 
 func Part2(r io.Reader) (int, error) {
-	inputs := make([]string, 0)
-	scanner := bufio.NewScanner(r)
-
-	for {
-		scanner.Scan()
-		text := scanner.Text()
-		if len(text) == 0 {
-			break
-		}
-
-		inputs = append(inputs, text)
-	}
+	inputs := common.ReadLinesToSlice(r)
 
 	intInputs, err := ParseInputs(inputs)
 	if err != nil {
