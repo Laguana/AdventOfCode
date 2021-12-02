@@ -2,6 +2,7 @@ package main
 
 import (
 	"AoC2021/day1"
+	"AoC2021/day2"
 	"fmt"
 	"os"
 )
@@ -34,6 +35,39 @@ func doDay1() {
 	fmt.Printf("Day 1 Part 2: %d\n", d1p2)
 }
 
+func doDay2() {
+	{
+		d2i, err := os.Open("day2/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d2i.Close()
+		d2p1, err := day2.Part1(d2i)
+		if err != nil {
+			fmt.Println("Day 2 Part 1 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 2 Part 1: %d\n", d2p1)
+	}
+
+	{
+		d2i, err := os.Open("day2/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d2i.Close()
+		d2p1, err := day2.Part2(d2i)
+		if err != nil {
+			fmt.Println("Day 2 Part 2 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 2 Part 2: %d\n", d2p1)
+	}
+}
+
 func main() {
 	doDay1()
+	doDay2()
 }
