@@ -3,6 +3,7 @@ package main
 import (
 	"AoC2021/day1"
 	"AoC2021/day2"
+	"AoC2021/day3"
 	"fmt"
 	"os"
 )
@@ -67,7 +68,25 @@ func doDay2() {
 	}
 }
 
+func doDay3() {
+	{
+		d3i, err := os.Open("day3/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d3i.Close()
+		d3p1, err := day3.Part1(d3i)
+		if err != nil {
+			fmt.Println("Day 3 Part 1 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 3 Part 1: %d\n", d3p1)
+	}
+}
+
 func main() {
 	doDay1()
 	doDay2()
+	doDay3()
 }
