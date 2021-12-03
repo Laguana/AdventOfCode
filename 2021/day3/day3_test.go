@@ -52,3 +52,34 @@ func TestDay2Part1Input(t *testing.T) {
 		t.Errorf("Expected product 749376, got %d", result)
 	}
 }
+
+func TestDay2Part2Sample(t *testing.T) {
+	lifeSupport, err := computeLifeSupport(sampleInput)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if lifeSupport.o2 != 23 {
+		t.Errorf("expected o2 23, got %d", lifeSupport.o2)
+	}
+	if lifeSupport.co2 != 10 {
+		t.Errorf("expected co2 10, got %d", lifeSupport.co2)
+	}
+}
+
+func TestDay2Part2Input(t *testing.T) {
+	d3i, err := os.Open("input.txt")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer d3i.Close()
+	result, err := Part2(d3i)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if result != 2372923 {
+		t.Errorf("Expected product 2372923, got %d", result)
+	}
+}
