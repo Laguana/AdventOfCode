@@ -153,6 +153,37 @@ func unpickedSum(seq []int, b BingoBoard) int {
 	return sum
 }
 
+func findLosingBoard(input ParsedInput) (WinningState, error) {
+	s := &Set{}
+	activeBoards := input.boards
+	for i, v := range input.sequence {
+		s = s.Add(v)
+		bi := 0
+		if len(activeBoards) > 1 {
+			// Whittle down to the loser
+			for {
+				if bi >= len(activeBoards) {
+					break
+				}
+				if hasBoardWon(s, activeBoards[bi]) {
+					activeBoards = append(activeBoards[:bi], activeBoards[bi+1:]...)
+				} else {
+					bi++
+				}
+			}
+		} else {
+			//find when it wins
+			if hasBoardWon(s, activeBoards[0]) {
+				return WinningState{
+					board:    activeBoards[0],
+					sequence: input.sequence[:i+1],
+				}, nil
+			}
+		}
+	}
+	return WinningState{}, fmt.Errorf("did not find a winning board")
+}
+
 func Part1(r io.Reader) (int, error) {
 	input := common.ReadLinesToSlice(r)
 	pi, err := parseInput(input)
@@ -169,7 +200,16 @@ func Part1(r io.Reader) (int, error) {
 }
 
 func Part2(r io.Reader) (int, error) {
-	//input := common.ReadLinesToSlice(r)
+	input := common.ReadLinesToSlice(r)
+	pi, err := parseInput(input)
+	if err != nil {
+		return 0, err
+	}
+	winState, err := findLosingBoard(pi)
+	if err != nil {
+		return 0, err
+	}
+	sum := unpickedSum(winState.sequence, winState.board)
 
-	return 0, fmt.Errorf("not implemented")
+	return sum * winState.sequence[len(winState.sequence)-1], nil
 }

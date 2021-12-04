@@ -117,6 +117,21 @@ func doDay4() {
 		fmt.Printf("Day 4 Part 1: %d\n", d4p1)
 	}
 
+	{
+		d4i, err := os.Open("day4/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d4i.Close()
+		d4p1, err := day4.Part2(d4i)
+		if err != nil {
+			fmt.Println("Day 4 Part 2 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 4 Part 2: %d\n", d4p1)
+	}
+
 }
 
 func main() {
