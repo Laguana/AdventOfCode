@@ -8,14 +8,10 @@ import (
 func ReadLinesToSlice(r io.Reader) []string {
 	inputs := make([]string, 0)
 	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanLines)
 
-	for {
-		scanner.Scan()
+	for scanner.Scan() {
 		text := scanner.Text()
-		if len(text) == 0 {
-			break
-		}
-
 		inputs = append(inputs, text)
 	}
 
