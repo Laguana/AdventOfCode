@@ -82,6 +82,16 @@ func TestDay2Part1Input(t *testing.T) {
 }
 
 func TestDay2Part2Sample(t *testing.T) {
+	pi, _ := parseInput(sampleInput)
+
+	losingState, _ := findLosingBoard(pi)
+
+	if losingState.sequence[len(losingState.sequence)-1] != 13 {
+		t.Errorf("Expected last called number to be 13, got %d", losingState.sequence[len(losingState.sequence)-1])
+	}
+	if losingState.board[0][0] != 3 {
+		t.Errorf("Expected middle board starting with 3 to win last")
+	}
 
 }
 

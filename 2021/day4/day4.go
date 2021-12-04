@@ -20,23 +20,6 @@ type WinningState struct {
 	sequence []int
 }
 
-type Set struct {
-	items map[int]struct{}
-}
-
-func (s *Set) Add(e int) *Set {
-	if s.items == nil {
-		s.items = make(map[int]struct{})
-	}
-	s.items[e] = struct{}{}
-	return s
-}
-
-func (s *Set) Has(e int) bool {
-	_, ok := s.items[e]
-	return ok
-}
-
 func parseBoard(input []string) (BingoBoard, error) {
 	board := [5][5]int{}
 	for i := 0; i < 5; i++ {
@@ -90,7 +73,7 @@ func parseInput(input []string) (ParsedInput, error) {
 	}, nil
 }
 
-func hasBoardWon(s *Set, b BingoBoard) bool {
+func hasBoardWon(s *common.Set, b BingoBoard) bool {
 	// check columns
 	for c := 0; c < 5; c++ {
 		won := true
@@ -121,7 +104,7 @@ func hasBoardWon(s *Set, b BingoBoard) bool {
 }
 
 func findWinningBoard(input ParsedInput) (WinningState, error) {
-	s := &Set{}
+	s := &common.Set{}
 	for i, v := range input.sequence {
 		s = s.Add(v)
 		for _, b := range input.boards {
@@ -137,7 +120,7 @@ func findWinningBoard(input ParsedInput) (WinningState, error) {
 }
 
 func unpickedSum(seq []int, b BingoBoard) int {
-	s := &Set{}
+	s := &common.Set{}
 	for _, v := range seq {
 		s = s.Add(v)
 	}
@@ -154,7 +137,7 @@ func unpickedSum(seq []int, b BingoBoard) int {
 }
 
 func findLosingBoard(input ParsedInput) (WinningState, error) {
-	s := &Set{}
+	s := &common.Set{}
 	activeBoards := input.boards
 	for i, v := range input.sequence {
 		s = s.Add(v)
