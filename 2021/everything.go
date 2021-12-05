@@ -5,6 +5,7 @@ import (
 	"AoC2021/day2"
 	"AoC2021/day3"
 	"AoC2021/day4"
+	"AoC2021/day5"
 	"fmt"
 	"os"
 )
@@ -60,12 +61,12 @@ func doDay2() {
 			os.Exit(1)
 		}
 		defer d2i.Close()
-		d2p1, err := day2.Part2(d2i)
+		d2p2, err := day2.Part2(d2i)
 		if err != nil {
 			fmt.Println("Day 2 Part 2 had an error: ", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Day 2 Part 2: %d\n", d2p1)
+		fmt.Printf("Day 2 Part 2: %d\n", d2p2)
 	}
 }
 
@@ -92,12 +93,12 @@ func doDay3() {
 			os.Exit(1)
 		}
 		defer d3i.Close()
-		d3p1, err := day3.Part2(d3i)
+		d3p2, err := day3.Part2(d3i)
 		if err != nil {
 			fmt.Println("Day 3 Part 2 had an error: ", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Day 3 Part 2: %d\n", d3p1)
+		fmt.Printf("Day 3 Part 2: %d\n", d3p2)
 	}
 }
 
@@ -124,12 +125,44 @@ func doDay4() {
 			os.Exit(1)
 		}
 		defer d4i.Close()
-		d4p1, err := day4.Part2(d4i)
+		d4p2, err := day4.Part2(d4i)
 		if err != nil {
 			fmt.Println("Day 4 Part 2 had an error: ", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Day 4 Part 2: %d\n", d4p1)
+		fmt.Printf("Day 4 Part 2: %d\n", d4p2)
+	}
+}
+
+func doDay5() {
+	{
+		d5i, err := os.Open("day5/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d5i.Close()
+		d5p1, err := day5.Part1(d5i)
+		if err != nil {
+			fmt.Println("Day 5 Part 1 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 5 Part 1: %d\n", d5p1)
+	}
+
+	{
+		d5i, err := os.Open("day5/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d5i.Close()
+		d5p2, err := day5.Part2(d5i)
+		if err != nil {
+			fmt.Println("Day 5 Part 2 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 5 Part 2: %d\n", d5p2)
 	}
 
 }
@@ -139,4 +172,5 @@ func main() {
 	doDay2()
 	doDay3()
 	doDay4()
+	doDay5()
 }

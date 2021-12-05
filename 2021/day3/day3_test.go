@@ -8,7 +8,7 @@ import (
 
 var sampleInput = strings.Split("00100,11110,10110,10111,10101,01111,00111,11100,10000,11001,00010,01010", ",")
 
-func TestDay2Part1Sample(t *testing.T) {
+func TestDay3Part1Sample(t *testing.T) {
 	parsedInput, err := parseInput(sampleInput)
 	if err != nil {
 		t.Error(err)
@@ -36,7 +36,7 @@ func TestDay2Part1Sample(t *testing.T) {
 	}
 }
 
-func TestDay2Part1Input(t *testing.T) {
+func TestDay3Part1Input(t *testing.T) {
 	d3i, err := os.Open("input.txt")
 	if err != nil {
 		t.Error(err)
@@ -53,7 +53,7 @@ func TestDay2Part1Input(t *testing.T) {
 	}
 }
 
-func TestDay2Part2Sample(t *testing.T) {
+func TestDay3Part2Sample(t *testing.T) {
 	lifeSupport, err := computeLifeSupport(sampleInput)
 	if err != nil {
 		t.Error(err)
@@ -67,7 +67,7 @@ func TestDay2Part2Sample(t *testing.T) {
 	}
 }
 
-func TestDay2Part2Input(t *testing.T) {
+func TestDay3Part2Input(t *testing.T) {
 	d3i, err := os.Open("input.txt")
 	if err != nil {
 		t.Error(err)

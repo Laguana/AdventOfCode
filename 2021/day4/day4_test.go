@@ -28,7 +28,7 @@ var sampleInput = strings.Split(
  2  0 12  3  7
 `, "\n")
 
-func TestDay2Part1Sample(t *testing.T) {
+func TestDay4Part1Sample(t *testing.T) {
 	pi, err := parseInput(sampleInput)
 	if err != nil {
 		t.Error(err)
@@ -63,7 +63,7 @@ func TestDay2Part1Sample(t *testing.T) {
 
 }
 
-func TestDay2Part1Input(t *testing.T) {
+func TestDay4Part1Input(t *testing.T) {
 	d4i, err := os.Open("input.txt")
 	if err != nil {
 		t.Error(err)
@@ -81,7 +81,7 @@ func TestDay2Part1Input(t *testing.T) {
 	}
 }
 
-func TestDay2Part2Sample(t *testing.T) {
+func TestDay4Part2Sample(t *testing.T) {
 	pi, _ := parseInput(sampleInput)
 
 	losingState, _ := findLosingBoard(pi)
@@ -95,7 +95,7 @@ func TestDay2Part2Sample(t *testing.T) {
 
 }
 
-func TestDay2Part2Input(t *testing.T) {
+func TestDay4Part2Input(t *testing.T) {
 	d4i, err := os.Open("input.txt")
 	if err != nil {
 		t.Error(err)
