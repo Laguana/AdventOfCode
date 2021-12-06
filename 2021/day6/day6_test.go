@@ -56,7 +56,7 @@ func TestDay6Part2Sample(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	lookup := computeNumberOfFishFromSingleStart()
+	lookup := computeNumberOfFishFromSingleStart(256)
 	sum := 0
 	for _, v := range input {
 		sum += lookup[8-v]
@@ -74,6 +74,24 @@ func TestDay6Part2(t *testing.T) {
 	}
 	defer d6i.Close()
 	result, err := Part2(d6i)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	expected := 1746710169834
+	if result != expected {
+		t.Errorf("Expected product %d, got %d", expected, result)
+	}
+}
+
+func TestDay6Part2Matrix(t *testing.T) {
+	d6i, err := os.Open("input.txt")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer d6i.Close()
+	result, err := Part2Matrix(d6i)
 	if err != nil {
 		t.Error(err)
 		return

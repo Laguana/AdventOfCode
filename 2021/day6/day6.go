@@ -50,8 +50,8 @@ func Part1(r io.Reader) (int, error) {
 }
 
 // Ok so 256 is too long. Dynamic programming to the rescue?
-func computeNumberOfFishFromSingleStart() []int {
-	// Invariant: result[i] is how many fish of age i
+func computeNumberOfFishFromSingleStart(days int) []int {
+	// Invariant: state[i] is how many fish of age i
 	// are descended from one of age 0
 	state := []int{1, 0, 0, 0, 0, 0, 0, 0, 0}
 
@@ -73,7 +73,7 @@ func computeNumberOfFishFromSingleStart() []int {
 			before[0]}
 	}
 
-	for day := 0; day < 256-9; day++ {
+	for day := 0; day < days-9; day++ {
 		state = oneStep(state)
 	}
 
@@ -91,6 +91,78 @@ func computeNumberOfFishFromSingleStart() []int {
 	return result
 }
 
+type Matrix9 [9][9]int
+type Vector9 [9]int
+
+func MatrixMult(a Matrix9, b Matrix9) Matrix9 {
+	result := Matrix9{}
+
+	for x := 0; x < 9; x++ {
+		for y := 0; y < 9; y++ {
+			// result[x][y] = b[x][:] * a[:][y]
+			result[x][y] = 0
+			for i := 0; i < 9; i++ {
+				result[x][y] += b[x][i] * a[i][y]
+			}
+		}
+	}
+
+	return result
+}
+
+// yeah the vector rotates, but i don't care here
+func MatrixVectorMult(a Matrix9, b Vector9) Vector9 {
+	result := Vector9{}
+
+	for x := 0; x < 9; x++ {
+		result[x] = 0
+		for y := 0; y < 9; y++ {
+			result[x] += a[x][y] * b[y]
+		}
+	}
+
+	return result
+}
+
+func Part2Matrix(r io.Reader) (int, error) {
+	input := common.ReadLinesToSlice(r)
+	di, err := parseInput(input)
+	if err != nil {
+		return 0, err
+	}
+
+	recurrence := Matrix9{
+		{0, 1, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 1, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 1, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 1, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 1, 0, 0},
+		{1, 0, 0, 0, 0, 0, 0, 1, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 1},
+		{1, 0, 0, 0, 0, 0, 0, 0, 0},
+	}
+	mi := recurrence
+	for i := 0; i < 8; i++ {
+		mi = MatrixMult(mi, mi)
+	}
+	// mi = recurrence ^ 256
+
+	vec := Vector9{0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for _, v := range di {
+		vec[v]++
+	}
+
+	finalState := MatrixVectorMult(mi, vec)
+
+	sum := 0
+	for _, v := range finalState {
+		sum += v
+	}
+
+	return sum, nil
+}
+
 func Part2(r io.Reader) (int, error) {
 	input := common.ReadLinesToSlice(r)
 	di, err := parseInput(input)
@@ -98,7 +170,7 @@ func Part2(r io.Reader) (int, error) {
 		return 0, err
 	}
 
-	lookup := computeNumberOfFishFromSingleStart()
+	lookup := computeNumberOfFishFromSingleStart(256)
 	sum := 0
 	for _, v := range di {
 		sum += lookup[8-v]
