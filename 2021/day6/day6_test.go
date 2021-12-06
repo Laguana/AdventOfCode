@@ -1,6 +1,7 @@
 package day6
 
 import (
+	"math/big"
 	"os"
 	"strings"
 	"testing"
@@ -96,8 +97,31 @@ func TestDay6Part2Matrix(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := 1746710169834
-	if result != expected {
-		t.Errorf("Expected product %d, got %d", expected, result)
+	var expected big.Int
+	expected.SetInt64(1746710169834)
+	if result.String() != expected.String() {
+		t.Errorf("Expected product %s, got %s", expected.String(), result.String())
 	}
 }
+
+/*
+func TestHowFarWeGo(t *testing.T) {
+	recurrence := getMatrix()
+	mi := recurrence
+	iters := 23
+	for i := 0; i < iters; i++ {
+		mi = MatrixMult(mi, mi)
+	}
+
+	vec := Vector9{}
+	vec[0].SetInt64(1)
+
+	finalState := MatrixVectorMult(mi, vec)
+
+	var sum big.Int
+	for _, v := range finalState {
+		sum.Add(&sum, &v)
+	}
+	fmt.Printf("2^%d: (%d)\n", iters, sum.BitLen())
+}
+*/

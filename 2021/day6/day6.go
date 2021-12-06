@@ -3,6 +3,7 @@ package day6
 import (
 	"AoC2021/common"
 	"io"
+	"math/big"
 	"strconv"
 	"strings"
 )
@@ -91,8 +92,8 @@ func computeNumberOfFishFromSingleStart(days int) []int {
 	return result
 }
 
-type Matrix9 [9][9]int
-type Vector9 [9]int
+type Matrix9 [9][9]big.Int
+type Vector9 [9]big.Int
 
 func MatrixMult(a Matrix9, b Matrix9) Matrix9 {
 	result := Matrix9{}
@@ -100,9 +101,11 @@ func MatrixMult(a Matrix9, b Matrix9) Matrix9 {
 	for x := 0; x < 9; x++ {
 		for y := 0; y < 9; y++ {
 			// result[x][y] = b[x][:] * a[:][y]
-			result[x][y] = 0
+			result[x][y] = big.Int{}
 			for i := 0; i < 9; i++ {
-				result[x][y] += b[x][i] * a[i][y]
+				prod := big.Int{}
+				prod.Mul(&b[x][i], &a[i][y])
+				result[x][y].Add(&result[x][y], &prod)
 			}
 		}
 	}
@@ -115,49 +118,72 @@ func MatrixVectorMult(a Matrix9, b Vector9) Vector9 {
 	result := Vector9{}
 
 	for x := 0; x < 9; x++ {
-		result[x] = 0
+		result[x] = big.Int{}
 		for y := 0; y < 9; y++ {
-			result[x] += a[x][y] * b[y]
+			prod := big.Int{}
+			prod.Mul(&a[x][y], &b[y])
+			result[x].Add(&result[x], &prod)
 		}
 	}
 
 	return result
 }
 
-func Part2Matrix(r io.Reader) (int, error) {
+func getMatrix() Matrix9 {
+	recurrence := Matrix9{}
+	bigint1 := big.Int{}
+	bigint1.SetInt64(1)
+	recurrence[0][1] = bigint1
+	recurrence[1][2] = bigint1
+	recurrence[2][3] = bigint1
+	recurrence[3][4] = bigint1
+	recurrence[4][5] = bigint1
+	recurrence[5][6] = bigint1
+	recurrence[6][7] = bigint1
+	recurrence[6][0] = bigint1
+	recurrence[7][8] = bigint1
+	recurrence[8][0] = bigint1
+	/*
+		{
+			{0, 1, 0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 1, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 1, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 1, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 1, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 1, 0, 0},
+			{1, 0, 0, 0, 0, 0, 0, 1, 0},
+			{0, 0, 0, 0, 0, 0, 0, 0, 1},
+			{1, 0, 0, 0, 0, 0, 0, 0, 0},
+		}*/
+	return recurrence
+}
+
+func Part2Matrix(r io.Reader) (big.Int, error) {
 	input := common.ReadLinesToSlice(r)
 	di, err := parseInput(input)
 	if err != nil {
-		return 0, err
+		return big.Int{}, err
 	}
 
-	recurrence := Matrix9{
-		{0, 1, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 1, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 1, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 1, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 1, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 1, 0, 0},
-		{1, 0, 0, 0, 0, 0, 0, 1, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 0, 0},
-	}
+	recurrence := getMatrix()
 	mi := recurrence
 	for i := 0; i < 8; i++ {
 		mi = MatrixMult(mi, mi)
 	}
 	// mi = recurrence ^ 256
 
-	vec := Vector9{0, 0, 0, 0, 0, 0, 0, 0, 0}
+	vec := Vector9{}
+	bigint1 := big.Int{}
+	bigint1.SetInt64(1)
 	for _, v := range di {
-		vec[v]++
+		vec[v].Add(&vec[v], &bigint1)
 	}
 
 	finalState := MatrixVectorMult(mi, vec)
 
-	sum := 0
+	var sum big.Int
 	for _, v := range finalState {
-		sum += v
+		sum.Add(&sum, &v)
 	}
 
 	return sum, nil
