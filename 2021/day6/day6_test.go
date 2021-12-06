@@ -78,7 +78,7 @@ func TestDay6Part2(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := 21305
+	expected := 1746710169834
 	if result != expected {
 		t.Errorf("Expected product %d, got %d", expected, result)
 	}
