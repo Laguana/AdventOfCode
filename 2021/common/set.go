@@ -19,11 +19,35 @@ func (s *Set) Has(e interface{}) bool {
 	return ok
 }
 
+func (s *Set) Intersect(t *Set) {
+	for v, _ := range s.items {
+		if !t.Has(v) {
+			delete(s.items, v)
+		}
+	}
+}
+
+func (s *Set) Exclude(t *Set) {
+	for v, _ := range s.items {
+		if t.Has(v) {
+			delete(s.items, v)
+		}
+	}
+}
+
 func (s *Set) Size() int {
 	if s.items == nil {
 		return 0
 	}
 	return len(s.items)
+}
+
+func (s *Set) AsSlice() []interface{} {
+	var result []interface{}
+	for v := range s.items {
+		result = append(result, v)
+	}
+	return result
 }
 
 func (s *Set) Print() {

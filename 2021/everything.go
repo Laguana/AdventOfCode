@@ -8,6 +8,7 @@ import (
 	"AoC2021/day5"
 	"AoC2021/day6"
 	"AoC2021/day7"
+	"AoC2021/day8"
 	"fmt"
 	"os"
 )
@@ -232,6 +233,38 @@ func doDay7() {
 	}
 }
 
+func doDay8() {
+	{
+		d8i, err := os.Open("day8/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d8i.Close()
+		d8p1, err := day8.Part1(d8i)
+		if err != nil {
+			fmt.Println("Day 8 Part 1 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 8 Part 1: %d\n", d8p1)
+	}
+
+	{
+		d8i, err := os.Open("day8/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d8i.Close()
+		d8p2, err := day8.Part2(d8i)
+		if err != nil {
+			fmt.Println("Day 8 Part 2 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 8 Part 2: %d\n", d8p2)
+	}
+}
+
 func main() {
 	doDay1()
 	doDay2()
@@ -240,4 +273,5 @@ func main() {
 	doDay5()
 	doDay6()
 	doDay7()
+	doDay8()
 }
