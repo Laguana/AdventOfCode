@@ -14,6 +14,14 @@ func (s *Set) Add(e interface{}) *Set {
 	return s
 }
 
+func (s *Set) Remove(e interface{}) *Set {
+	_, ok := s.items[e]
+	if ok {
+		delete(s.items, e)
+	}
+	return s
+}
+
 func (s *Set) Has(e interface{}) bool {
 	_, ok := s.items[e]
 	return ok
@@ -48,6 +56,13 @@ func (s *Set) AsSlice() []interface{} {
 		result = append(result, v)
 	}
 	return result
+}
+
+func (s *Set) Any() interface{} {
+	for v := range s.items {
+		return v
+	}
+	panic("no elements")
 }
 
 func (s *Set) Print() {
