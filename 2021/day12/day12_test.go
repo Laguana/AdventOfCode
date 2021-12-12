@@ -7,14 +7,25 @@ import (
 )
 
 var sampleInput = strings.Split(
-	``, "\n")
+	`start-A
+start-b
+A-c
+A-b
+b-d
+A-end
+b-end`, "\n")
 
 func TestDay12Part1Sample(t *testing.T) {
-	_, err := parseInput(sampleInput)
+	pi, err := parseInput(sampleInput)
 	if err != nil {
 		t.Error(err)
 	}
 
+	paths := countPaths(pi, true)
+
+	if paths != 10 {
+		t.Errorf("Expected 10 paths, got %d", paths)
+	}
 }
 
 func TestDay12Part1(t *testing.T) {
@@ -29,18 +40,23 @@ func TestDay12Part1(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := 1732
+	expected := 4754
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
 }
 
 func TestDay12Part2Sample(t *testing.T) {
-	_, err := parseInput(sampleInput)
+	pi, err := parseInput(sampleInput)
 	if err != nil {
 		t.Error(err)
 	}
 
+	paths := countPaths(pi, false)
+
+	if paths != 36 {
+		t.Errorf("Expected 36 paths, got %d", paths)
+	}
 }
 
 func TestDay12Part2(t *testing.T) {

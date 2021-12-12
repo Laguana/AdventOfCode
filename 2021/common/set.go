@@ -65,6 +65,17 @@ func (s *Set) Any() interface{} {
 	panic("no elements")
 }
 
+func (s *Set) Copy() *Set {
+	result := Set{}
+	if s.items != nil {
+		result.items = make(map[interface{}]struct{})
+		for k, _ := range s.items {
+			result.items[k] = struct{}{}
+		}
+	}
+	return &result
+}
+
 func (s *Set) Print() {
 	fmt.Println(s.items)
 }
