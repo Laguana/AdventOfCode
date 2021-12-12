@@ -38,8 +38,8 @@ func isSmallCave(s string) bool {
 type Path struct {
 	smallCavesLeft *common.Set
 	dupedOne       bool
-	visited        []string
-	location       string
+	//	visited        []string
+	location string
 }
 
 func countPaths(pi ParsedInput, noRevisit bool) int {
@@ -76,14 +76,19 @@ func countPaths(pi ParsedInput, noRevisit bool) int {
 			nextSmall.Remove(p.location)
 		}
 
-		nextVisited := append(p.visited, p.location)
+		//nextVisited := append(p.visited, p.location)
 		//fmt.Println(nextVisited)
 
 		//fmt.Printf("Extending: ")
 		for _, nextI := range pi.graph[p.location].AsSlice() {
 			next := nextI.(string)
 			//fmt.Printf("%s;", next)
-			newPath := Path{smallCavesLeft: nextSmall, dupedOne: nextDuped, location: next, visited: nextVisited}
+			newPath := Path{
+				smallCavesLeft: nextSmall,
+				dupedOne:       nextDuped,
+				location:       next,
+				//	visited:        nextVisited,
+			}
 			fringe = append(fringe, newPath)
 		}
 		//fmt.Printf("\n")
