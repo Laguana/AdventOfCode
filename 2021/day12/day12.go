@@ -9,25 +9,9 @@ import (
 
 // Lets just allocate a border that we can index to but otherwise completely ignore
 type ParsedInput struct {
-	graph map[string]*common.Set
-}
-
-func parseInput(s []string) (ParsedInput, error) {
-	result := ParsedInput{graph: make(map[string]*common.Set)}
-
-	for _, l := range s {
-		parts := strings.Split(l, "-")
-		if result.graph[parts[0]] == nil {
-			result.graph[parts[0]] = &common.Set{}
-		}
-		if result.graph[parts[1]] == nil {
-			result.graph[parts[1]] = &common.Set{}
-		}
-		result.graph[parts[0]].Add(parts[1])
-		result.graph[parts[1]].Add(parts[0])
-	}
-
-	return result, nil
+	idLookup   map[string]int
+	nameLookup map[int]string
+	graph      map[int]*common.Set
 }
 
 func isSmallCave(s string) bool {
@@ -35,45 +19,93 @@ func isSmallCave(s string) bool {
 	return r.MatchString(s)
 }
 
+func isSmallCaveId(c int) bool {
+	return c < 0
+}
+
+func parseInput(s []string) (ParsedInput, error) {
+	result := ParsedInput{
+		idLookup:   make(map[string]int),
+		nameLookup: make(map[int]string),
+		graph:      make(map[int]*common.Set),
+	}
+
+	result.idLookup = make(map[string]int)
+	result.idLookup["start"] = -1
+	result.idLookup["end"] = -2
+	result.nameLookup[-1] = "start"
+	result.nameLookup[-2] = "end"
+	nextId := 3
+
+	lookup := func(s string) int {
+		v, ok := result.idLookup[s]
+		if ok {
+			return v
+		}
+		v = nextId
+		nextId++
+		if isSmallCave(s) {
+			v = -v
+		}
+		result.idLookup[s] = v
+		result.nameLookup[v] = s
+		return v
+	}
+
+	for _, l := range s {
+		parts := strings.Split(l, "-")
+		p0id := lookup(parts[0])
+		p1id := lookup(parts[1])
+		if result.graph[p0id] == nil {
+			result.graph[p0id] = &common.Set{}
+		}
+		if result.graph[p1id] == nil {
+			result.graph[p1id] = &common.Set{}
+		}
+		result.graph[p0id].Add(p1id)
+		result.graph[p1id].Add(p0id)
+	}
+
+	return result, nil
+}
+
 type Path struct {
-	smallCavesLeft *common.Set
-	dupedOne       bool
-	//	visited        []string
-	location string
+	smallCavesVisited *common.Set
+	dupedOne          bool
+	location          int
+	// visited []string
 }
 
 func countPaths(pi ParsedInput, noRevisit bool) int {
 	fringe := make([]Path, 0)
 
-	basePath := Path{smallCavesLeft: &common.Set{}, dupedOne: noRevisit, location: "start"}
+	basePath := Path{
+		smallCavesVisited: &common.Set{},
+		dupedOne:          noRevisit,
+		location:          -1}
 
-	for k, _ := range pi.graph {
-		if isSmallCave(k) {
-			basePath.smallCavesLeft.Add(k)
-		}
-	}
 	fringe = append(fringe, basePath)
 
 	endPaths := make([]Path, 0)
 
 	visit := func(p Path) {
-		if p.location == "end" {
+		if p.location == -2 {
 			//fmt.Printf("%v - end\n", p.visited)
 			endPaths = append(endPaths, p)
 			return
 		}
 
-		nextSmall := p.smallCavesLeft.Copy()
+		nextSmall := p.smallCavesVisited.Copy()
 		nextDuped := p.dupedOne
-		if isSmallCave(p.location) {
-			if !p.smallCavesLeft.Has(p.location) {
+		if isSmallCaveId(p.location) {
+			if p.smallCavesVisited.Has(p.location) {
 
-				if p.dupedOne || p.location == "start" {
+				if p.dupedOne || p.location == -1 {
 					return
 				}
 				nextDuped = true
 			}
-			nextSmall.Remove(p.location)
+			nextSmall.Add(p.location)
 		}
 
 		//nextVisited := append(p.visited, p.location)
@@ -81,12 +113,12 @@ func countPaths(pi ParsedInput, noRevisit bool) int {
 
 		//fmt.Printf("Extending: ")
 		for _, nextI := range pi.graph[p.location].AsSlice() {
-			next := nextI.(string)
+			next := nextI.(int)
 			//fmt.Printf("%s;", next)
 			newPath := Path{
-				smallCavesLeft: nextSmall,
-				dupedOne:       nextDuped,
-				location:       next,
+				smallCavesVisited: nextSmall,
+				dupedOne:          nextDuped,
+				location:          next,
 				//	visited:        nextVisited,
 			}
 			fringe = append(fringe, newPath)
