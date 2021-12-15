@@ -129,6 +129,72 @@ func astar(pi ParsedInput, start, stop pair) int {
 	return -1
 }
 
+func tileCost(pi ParsedInput, p pair) int {
+	tx := p.x / pi.width
+	ty := p.y / pi.height
+	qx := p.x % pi.width
+	qy := p.y % pi.height
+
+	return 1 + ((pi.grid[qy][qx]-1)%9+tx+ty)%9
+}
+
+func floodMap(pi ParsedInput, stop pair, larger bool) [][]int {
+	queue := &common.Set{}
+	done := &common.Set{}
+
+	height := pi.height
+	width := pi.width
+	if larger {
+		height *= 5
+		width *= 5
+	}
+
+	result := make([][]int, height)
+	for y := 0; y < height; y++ {
+		result[y] = make([]int, width)
+		for x := 0; x < width; x++ {
+			result[y][x] = 99999999
+		}
+	}
+
+	result[stop.y][stop.x] = tileCost(pi, stop)
+
+	queue.Add(stop)
+
+	for queue.Size() > 0 {
+		minv := 9999999
+		mine := pair{}
+		for _, ei := range queue.AsSlice() {
+			e := ei.(pair)
+			if result[e.y][e.x] < minv {
+				minv = result[e.y][e.x]
+				mine = e
+			}
+		}
+		queue.Remove(mine)
+		done.Add(mine)
+
+		succ := func(nPos pair) {
+			if nPos.x < 0 || nPos.y < 0 || nPos.x >= width || nPos.y >= height {
+				return
+			}
+			if done.Has(nPos) {
+				return
+			}
+			cost := minv + tileCost(pi, nPos)
+			if result[nPos.y][nPos.x] > cost {
+				result[nPos.y][nPos.x] = cost
+				queue.Add(nPos)
+			}
+		}
+		succ(pair{x: mine.x + 1, y: mine.y})
+		succ(pair{x: mine.x - 1, y: mine.y})
+		succ(pair{x: mine.x, y: mine.y + 1})
+		succ(pair{x: mine.x, y: mine.y - 1})
+	}
+	return result
+}
+
 func Part1(r io.Reader) (int, error) {
 	input := common.ReadLinesToSlice(r)
 	pi, err := parseInput(input)
@@ -136,17 +202,19 @@ func Part1(r io.Reader) (int, error) {
 		return 0, err
 	}
 
-	cost := astar(pi, pair{x: 0, y: 0}, pair{x: pi.width - 1, y: pi.height - 1})
+	fmap := floodMap(pi, pair{x: pi.width - 1, y: pi.height - 1}, false)
 
-	return cost, nil
+	return fmap[0][0] - pi.grid[0][0], nil
 }
 
 func Part2(r io.Reader) (int, error) {
 	input := common.ReadLinesToSlice(r)
-	_, err := parseInput(input)
+	pi, err := parseInput(input)
 	if err != nil {
 		return 0, err
 	}
 
-	return 0, fmt.Errorf("not implemented")
+	fmap := floodMap(pi, pair{x: pi.width*5 - 1, y: pi.height*5 - 1}, true)
+
+	return fmap[0][0] - pi.grid[0][0], nil
 }

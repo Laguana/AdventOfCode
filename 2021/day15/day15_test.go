@@ -24,10 +24,9 @@ func TestDay15Part1Sample(t *testing.T) {
 		t.Error(err)
 	}
 
-	cost := astar(pi, pair{x: 0, y: 0}, pair{x: pi.width - 1, y: pi.height - 1})
-	if cost != 40 {
-		t.Errorf("Should have cost 40, cost %d", cost)
-
+	fmap := floodMap(pi, pair{x: pi.width - 1, y: pi.height - 1}, false)
+	if fmap[0][0] != 41 {
+		t.Errorf("Expected cost 40, got %d", fmap[0][0])
 	}
 }
 
@@ -43,16 +42,20 @@ func TestDay15Part1(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := -1
+	expected := 415
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
 }
 
 func TestDay15Part2Sample(t *testing.T) {
-	_, err := parseInput(sampleInput)
+	pi, err := parseInput(sampleInput)
 	if err != nil {
 		t.Error(err)
+	}
+	fmap := floodMap(pi, pair{x: pi.width*5 - 1, y: pi.height*5 - 1}, true)
+	if fmap[0][0] != 316 {
+		t.Errorf("Expected cost 316, got %d", fmap[0][0])
 	}
 }
 
@@ -68,7 +71,7 @@ func TestDay15Part2(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := -1
+	expected := 2864
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
