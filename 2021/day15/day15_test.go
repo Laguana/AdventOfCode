@@ -30,6 +30,17 @@ func TestDay15Part1Sample(t *testing.T) {
 	}
 }
 
+func TestDay15Part1SampleAStar(t *testing.T) {
+	pi, err := parseInput(sampleInput)
+	if err != nil {
+		t.Error(err)
+	}
+	cost := astar(pi, pair{x: 0, y: 0}, pair{x: pi.width - 1, y: pi.height - 1}, false)
+	if cost != 40 {
+		t.Errorf("A* should have been 40, was %d", cost)
+	}
+}
+
 func TestDay15Part1(t *testing.T) {
 	d15i, err := os.Open("input.txt")
 	if err != nil {

@@ -2,7 +2,7 @@ package day15
 
 import (
 	"AoC2021/common"
-	"fmt"
+	"container/heap"
 	"io"
 )
 
@@ -33,13 +33,6 @@ type pair struct {
 	x, y int
 }
 
-type searchNode struct {
-	pos       pair
-	cost      int
-	heuristic int
-	parent    *searchNode
-}
-
 func iabs(a int) int {
 	if a < 0 {
 		return -a
@@ -51,38 +44,52 @@ func manhattanDistance(a, b pair) int {
 	return iabs(a.x-b.x) + iabs(a.y-b.y)
 }
 
-func astar(pi ParsedInput, start, stop pair) int {
-	openList := make([]searchNode, 0)
-	closedList := make(map[pair]searchNode)
+type PosItemMap map[pair]*searchNode
 
-	openList = append(openList, searchNode{
-		pos:       start,
-		cost:      0,
-		heuristic: manhattanDistance(start, stop),
-	})
+func (pim PosItemMap) get(p pair) *searchNode {
+	n, ok := pim[p]
+	if !ok {
+		n = &searchNode{pos: p}
+		pim[p] = n
+	}
+	return n
+}
 
-	progress := 0
+func astar(pi ParsedInput, start, stop pair, large bool) int {
+	width := pi.width
+	height := pi.height
+	if large {
+		width *= 5
+		height *= 5
+	}
 
-	for len(openList) > 0 {
-		mini := 0
-		minf := 99999999
-		for i, v := range openList {
-			if v.cost+v.heuristic < minf {
-				mini = i
-				minf = v.cost + v.heuristic
-			}
-		}
-		sn := openList[mini]
-		openList = append(openList[:mini], openList[mini+1:]...)
+	// Copied in large part from https://github.com/kkulak/golang-astar/blob/master/astar-impl.go
 
-		progress++
+	posItemMap := PosItemMap{}
+	priorityQueue := &PriorityQueue{}
+	heap.Init(priorityQueue)
+
+	startNode := posItemMap.get(start)
+	startNode.open = true
+	startNode.cost = 0
+	startNode.heuristic = manhattanDistance(start, stop)
+	startNode.Priority = startNode.heuristic
+
+	priorityQueue.Push(startNode)
+
+	//progress := 0
+
+	for priorityQueue.Len() > 0 {
+		sn := heap.Pop(priorityQueue).(*searchNode)
+
+		/*progress++
 		if progress%1000 == 0 {
-			fmt.Printf("%d: %d, %v\n", progress, len(openList), sn)
-		}
+			fmt.Printf("%d: %d, %v\n", progress, priorityQueue.Len(), sn)
+		}*/
 
 		if sn.pos == stop {
 			// Found the end
-			/*t := &sn
+			/*t := sn
 			for t != nil {
 				fmt.Println(t)
 				t = t.parent
@@ -91,39 +98,34 @@ func astar(pi ParsedInput, start, stop pair) int {
 		}
 		// generate successors
 		addSucc := func(nPos pair) {
-			if nPos.x < 0 || nPos.y < 0 || nPos.x >= pi.width || nPos.y >= pi.height {
+			if nPos.x < 0 || nPos.y < 0 || nPos.x >= width || nPos.y >= height {
 				return
 			}
-			s := searchNode{
-				pos:       nPos,
-				cost:      sn.cost + pi.grid[nPos.y][nPos.x],
-				heuristic: manhattanDistance(nPos, stop),
-				parent:    &sn,
-			}
-			{
-				ce, ok := closedList[s.pos]
-				if ok && ce.cost+ce.heuristic <= s.cost+s.heuristic {
-					//fmt.Printf("Already have better path for %v\n", nPos)
-					return
-				}
-			}
-
-			ce, ok := closedList[nPos]
-			if ok && ce.cost+ce.heuristic < s.cost+s.heuristic {
-				//fmt.Printf("Already have better path for %v\n", nPos)
+			s := posItemMap.get(nPos)
+			if s.closed {
 				return
 			}
-			openList = append(openList, s)
+			sCost := sn.cost + tileCost(pi, nPos)
+			if !s.open {
+				s.cost = sCost
+				s.open = true
+				s.heuristic = manhattanDistance(nPos, stop)
+				s.Priority = s.cost + s.heuristic
+				s.parent = sn
+				heap.Push(priorityQueue, s)
+			} else if sCost < s.cost {
+				s.cost = sCost
+				s.open = true
+				s.heuristic = manhattanDistance(nPos, stop)
+				s.Priority = s.cost + s.heuristic
+				s.parent = sn
+				heap.Fix(priorityQueue, s.Index)
+			}
 		}
 		addSucc(pair{x: sn.pos.x + 1, y: sn.pos.y})
 		addSucc(pair{x: sn.pos.x - 1, y: sn.pos.y})
 		addSucc(pair{x: sn.pos.x, y: sn.pos.y + 1})
 		addSucc(pair{x: sn.pos.x, y: sn.pos.y - 1})
-
-		old, ok := closedList[sn.pos]
-		if !ok || old.cost+old.heuristic > sn.cost+sn.heuristic {
-			closedList[sn.pos] = sn
-		}
 	}
 
 	return -1
@@ -214,7 +216,9 @@ func Part2(r io.Reader) (int, error) {
 		return 0, err
 	}
 
-	fmap := floodMap(pi, pair{x: pi.width*5 - 1, y: pi.height*5 - 1}, true)
+	cost := astar(pi, pair{x: 0, y: 0}, pair{x: pi.width*5 - 1, y: pi.height*5 - 1}, true)
+	//fmap := floodMap(pi, pair{x: pi.width*5 - 1, y: pi.height*5 - 1}, true)
 
-	return fmap[0][0] - pi.grid[0][0], nil
+	//return fmap[0][0] - pi.grid[0][0], nil
+	return cost, nil
 }
