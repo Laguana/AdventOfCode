@@ -6,14 +6,31 @@ import (
 	"testing"
 )
 
-var sampleInput = strings.Split(
-	``, "\n")
+var sampleInput []string = strings.Split("8A004A801A8002F478", "\n")
 
 func TestDay16Part1Sample(t *testing.T) {
-	_, err := parseInput(sampleInput)
+	pi, err := parseInput(sampleInput)
 	if err != nil {
 		t.Error(err)
 	}
+	packet, err := parsePacket(pi.input)
+	if err != nil {
+		t.Error(err)
+	}
+	if packet.Version() != 4 {
+		t.Errorf("Should be version 4, got %v", packet.Version())
+	}
+	if packet.Kind() == Literal {
+		t.Errorf("Should not be a literal, got %v", packet.Kind())
+	}
+
+	versionSum := 0
+	visitHeaders(func(p Packet) { versionSum += int(p.Version()) }, packet)
+
+	if versionSum != 16 {
+		t.Errorf("Should have summed to 16, got %d", versionSum)
+	}
+
 }
 
 func TestDay16Part1(t *testing.T) {
@@ -28,16 +45,25 @@ func TestDay16Part1(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := -1
+	expected := 906
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
 }
 
 func TestDay16Part2Sample(t *testing.T) {
-	_, err := parseInput(sampleInput)
+	pi, err := parseInput(strings.Split("9C0141080250320F1802104A08", "\n"))
 	if err != nil {
 		t.Error(err)
+	}
+
+	p, err := parsePacket(pi.input)
+	if err != nil {
+		t.Error(err)
+	}
+	v := eval(p)
+	if v != 1 {
+		t.Errorf("Expected 1, got %d", v)
 	}
 }
 
@@ -53,7 +79,7 @@ func TestDay16Part2(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := -1
+	expected := int64(819324480368)
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
