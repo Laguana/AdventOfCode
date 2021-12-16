@@ -2,7 +2,6 @@ package day15
 
 import (
 	"AoC2021/common"
-	"container/heap"
 	"io"
 )
 
@@ -33,6 +32,15 @@ type pair struct {
 	x, y int
 }
 
+type searchNode struct {
+	pos       pair
+	cost      int
+	heuristic int
+	open      bool
+	closed    bool
+	parent    *searchNode
+}
+
 func iabs(a int) int {
 	if a < 0 {
 		return -a
@@ -44,56 +52,68 @@ func manhattanDistance(a, b pair) int {
 	return iabs(a.x-b.x) + iabs(a.y-b.y)
 }
 
-type PosItemMap map[pair]*searchNode
+type searchNodeMap map[pair]*searchNode
 
-func (pim PosItemMap) get(p pair) *searchNode {
-	n, ok := pim[p]
+func (snm searchNodeMap) get(p pair) *searchNode {
+	v, ok := snm[p]
 	if !ok {
-		n = &searchNode{pos: p}
-		pim[p] = n
+		v = &searchNode{pos: p}
+		snm[p] = v
 	}
-	return n
+	return v
 }
 
-func astar(pi ParsedInput, start, stop pair, large bool) int {
+func astar(pi ParsedInput, start, stop pair, long bool) int {
 	width := pi.width
 	height := pi.height
-	if large {
+	if long {
 		width *= 5
 		height *= 5
 	}
 
-	// Copied in large part from https://github.com/kkulak/golang-astar/blob/master/astar-impl.go
+	snm := searchNodeMap{}
+	openList := make([]*searchNode, 0)
 
-	posItemMap := PosItemMap{}
-	priorityQueue := &PriorityQueue{}
-	heap.Init(priorityQueue)
-
-	startNode := posItemMap.get(start)
-	startNode.open = true
-	startNode.cost = 0
-	startNode.heuristic = manhattanDistance(start, stop)
-	startNode.Priority = startNode.heuristic
-
-	priorityQueue.Push(startNode)
+	startn := snm.get(start)
+	startn.open = true
+	startn.heuristic = manhattanDistance(start, stop)
+	openList = append(openList, startn)
 
 	//progress := 0
 
-	for priorityQueue.Len() > 0 {
-		sn := heap.Pop(priorityQueue).(*searchNode)
+	for len(openList) > 0 {
+		mini := 0
+		minf := 99999999
+		for i, v := range openList {
+			if v.cost+v.heuristic < minf {
+				mini = i
+				minf = v.cost + v.heuristic
+			}
+		}
+		sn := openList[mini]
+		openList = append(openList[:mini], openList[mini+1:]...)
 
-		/*progress++
-		if progress%1000 == 0 {
-			fmt.Printf("%d: %d, %v\n", progress, priorityQueue.Len(), sn)
-		}*/
+		if sn.closed {
+			continue
+		}
+
+		sn.closed = true
+
+		/*
+			progress++
+			if progress%1000 == 0 {
+				fmt.Printf("%d: %d, %v\n", progress, len(openList), sn)
+			}
+			// */
 
 		if sn.pos == stop {
 			// Found the end
-			/*t := sn
-			for t != nil {
-				fmt.Println(t)
-				t = t.parent
-			}*/
+			/*
+				t := sn
+				for t != nil {
+					fmt.Println(t)
+					t = t.parent
+				} // */
 			return sn.cost
 		}
 		// generate successors
@@ -101,26 +121,22 @@ func astar(pi ParsedInput, start, stop pair, large bool) int {
 			if nPos.x < 0 || nPos.y < 0 || nPos.x >= width || nPos.y >= height {
 				return
 			}
-			s := posItemMap.get(nPos)
+			s := snm.get(nPos)
 			if s.closed {
 				return
 			}
-			sCost := sn.cost + tileCost(pi, nPos)
-			if !s.open {
-				s.cost = sCost
-				s.open = true
-				s.heuristic = manhattanDistance(nPos, stop)
-				s.Priority = s.cost + s.heuristic
-				s.parent = sn
-				heap.Push(priorityQueue, s)
-			} else if sCost < s.cost {
-				s.cost = sCost
-				s.open = true
-				s.heuristic = manhattanDistance(nPos, stop)
-				s.Priority = s.cost + s.heuristic
-				s.parent = sn
-				heap.Fix(priorityQueue, s.Index)
+			cost := sn.cost + tileCost(pi, nPos)
+			heuristic := manhattanDistance(nPos, stop)
+			if s.open && s.cost+s.heuristic < cost+heuristic {
+				// already have a better path
+				return
 			}
+			s.parent = sn
+			s.cost = cost
+			s.heuristic = heuristic
+			s.open = true
+
+			openList = append(openList, s)
 		}
 		addSucc(pair{x: sn.pos.x + 1, y: sn.pos.y})
 		addSucc(pair{x: sn.pos.x - 1, y: sn.pos.y})
