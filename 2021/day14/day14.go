@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// Lets just allocate a border that we can index to but otherwise completely ignore
 type ParsedInput struct {
 	rules map[string]string
 	start string

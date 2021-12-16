@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// Lets just allocate a border that we can index to but otherwise completely ignore
 type Grid struct {
 	width, height int
 	grid          [][]bool

@@ -5,7 +5,6 @@ import (
 	"io"
 )
 
-// Lets just allocate a border that we can index to but otherwise completely ignore
 type ParsedInput struct {
 	width, height int
 	grid          [][]int

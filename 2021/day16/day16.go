@@ -1,4 +1,4 @@
-package dayXX
+package day16
 
 import (
 	"AoC2021/common"
