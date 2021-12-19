@@ -111,7 +111,8 @@ func (t triple) getCoord(ax axis) int {
 }
 
 type relativeBeacons struct {
-	beacons []triple
+	position triple
+	beacons  []triple
 }
 
 type ParsedInput struct {
@@ -135,7 +136,7 @@ func parseInput(s []string) (ParsedInput, error) {
 			continue
 		}
 		if v == "" {
-			result.scanners = append(result.scanners, relativeBeacons{beacons})
+			result.scanners = append(result.scanners, relativeBeacons{triple{0, 0, 0}, beacons})
 			scanner++
 			newScanner = true
 			continue
@@ -156,7 +157,7 @@ func parseInput(s []string) (ParsedInput, error) {
 		beacons = append(beacons, triple{x, y, z})
 	}
 	if !newScanner {
-		result.scanners = append(result.scanners, relativeBeacons{beacons})
+		result.scanners = append(result.scanners, relativeBeacons{triple{0, 0, 0}, beacons})
 	}
 
 	return result, nil
@@ -252,6 +253,21 @@ func align(a, b relativeBeacons) alignmentData {
 	return result
 }
 
+func adjustRelativeBeacons(b *relativeBeacons, d alignmentData) {
+	b.position = triple{x: d.delta.x, y: d.delta.y, z: d.delta.z}
+	for i, v := range b.beacons {
+		// d.delta comes from triple{a.x - pbx, a.y - pby, a.z - pbz}
+		// to apply it, we would need to be doing it in as coordinate system
+		//
+		// For aligned cooridinates, we want (pbx,pby,pbz)+delta = (a.x,a.y,a.z)
+		//                                                       = (pbx+a.x-pbx,...) checks out?
+		x := v.getCoord(d.x)
+		y := v.getCoord(d.y)
+		z := v.getCoord(d.z)
+		b.beacons[i] = triple{x: x + d.delta.x, y: y + d.delta.y, z: z + d.delta.z}
+	}
+}
+
 func realign(a, b alignmentData) alignmentData {
 	result := alignmentData{}
 	zero := triple{0, 0, 0}
@@ -282,72 +298,90 @@ func reverseAlign(a alignmentData) alignmentData {
 	return result
 }
 
-func alignAll(pi ParsedInput) []alignmentData {
-	// alignment[i][j] = {(dx,dy,dz), (ax,ay,az)}
-	// if scanner i
-	n := len(pi.scanners)
-	alignment := make([][]alignmentData, n)
-	for i := 0; i < n; i++ {
-		alignment[i] = make([]alignmentData, n)
-	}
-
+func alignAll(pi ParsedInput) {
 	zero := triple{0, 0, 0}
 
-	for i := 0; i < n; i++ {
-		// attempt to align i with others
-		a := pi.scanners[i]
-		for j := 0; j < n; j++ {
-			if j == i {
-				continue
-			}
-			if alignment[j][i].delta != zero {
-				// Already aligned
-				continue
-			}
-			data := align(a, pi.scanners[j])
-			if data.delta != zero {
-				alignment[i][j] = data
-				alignment[j][i] = reverseAlign(data)
-				fmt.Printf("%d %d\n%v\n%v\n", i, j, alignment[i][j], alignment[j][i])
+	toAlign := &common.Set{}
+	for i, _ := range pi.scanners {
+		toAlign.Add(i)
+	}
+	alignedUnprocessed := &common.Set{}
+	toAlign.Remove(0)
+	alignedUnprocessed.Add(0)
 
-				for k := 0; k < n; k++ {
-					if k != i && k != j && alignment[j][k].delta != zero && alignment[i][k].delta == zero {
-						alignment[i][k] = realign(alignment[i][j], alignment[j][k])
-						alignment[k][i] = reverseAlign(alignment[i][k])
-						//fmt.Printf("-- %d\n-- %v\n-- %v\n", k, alignment[j][k], alignment[i][k])
-					}
-					if k != i && k != j && alignment[k][i].delta != zero && alignment[k][j].delta == zero {
-						alignment[k][j] = realign(alignment[k][i], alignment[i][j])
-						alignment[j][k] = reverseAlign(alignment[k][j])
-						//fmt.Printf("-- %d\n-- %v\n-- %v\n", k, alignment[k][i], alignment[k][j])
-					}
-				}
+	for toAlign.Size() > 0 && alignedUnprocessed.Size() > 0 {
+		ai := alignedUnprocessed.Any().(int)
+		alignedUnprocessed.Remove(ai)
+		a := pi.scanners[ai]
+
+		for _, bi := range toAlign.AsSlice() {
+			b := pi.scanners[bi.(int)]
+			data := align(a, b)
+			if data.delta != zero {
+				adjustRelativeBeacons(&b, data)
+				pi.scanners[bi.(int)] = b
+				toAlign.Remove(bi)
+				alignedUnprocessed.Add(bi)
 			}
 		}
 	}
+	if toAlign.Size() > 0 {
+		panic("Failed to align some")
+	}
+}
 
-	fmt.Println(alignment)
-
-	return alignment[0]
-
+func countBeacons(pi ParsedInput) int {
+	beacons := &common.Set{}
+	for _, v := range pi.scanners {
+		for _, b := range v.beacons {
+			beacons.Add(b)
+		}
+	}
+	return beacons.Size()
 }
 
 func Part1(r io.Reader) (int, error) {
 	input := common.ReadLinesToSlice(r)
-	_, err := parseInput(input)
+	pi, err := parseInput(input)
 	if err != nil {
 		return 0, err
 	}
 
-	return 0, fmt.Errorf("not implemented")
+	alignAll(pi)
+
+	return countBeacons(pi), nil
+}
+
+func iabs(i int) int {
+	if i < 0 {
+		return -i
+	} else {
+		return i
+	}
+}
+
+func manhattan(a, b triple) int {
+	return iabs(a.x-b.x) + iabs(a.y-b.y) + iabs(a.z-b.z)
 }
 
 func Part2(r io.Reader) (int, error) {
 	input := common.ReadLinesToSlice(r)
-	_, err := parseInput(input)
+	pi, err := parseInput(input)
 	if err != nil {
 		return 0, err
 	}
 
-	return 0, fmt.Errorf("not implemented")
+	alignAll(pi)
+
+	max := 0
+	for _, a := range pi.scanners {
+		for _, b := range pi.scanners {
+			dist := manhattan(a.position, b.position)
+			if dist > max {
+				max = dist
+			}
+		}
+	}
+
+	return max, nil
 }

@@ -171,11 +171,15 @@ func TestDay19Part1Sample(t *testing.T) {
 	//temp := triple{1, 1, 1}
 	//t.Error(realign(alignmentData{delta: temp, x: -X, y: Y, z: -Z}, alignmentData{delta: temp, x: -Y, y: -Z, z: X}))
 
-	t.Error(alignAll(pi))
+	alignAll(pi)
 
+	count := countBeacons(pi)
+	if count != 79 {
+		t.Errorf("Expected 79 beacons, got %d", count)
+	}
 }
 
-func TestDay19Part1(t *testing.T) {
+func zTestDay19Part1(t *testing.T) {
 	d19i, err := os.Open("input.txt")
 	if err != nil {
 		t.Error(err)
@@ -187,16 +191,33 @@ func TestDay19Part1(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := -1
+	expected := 400
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
 }
 
 func TestDay19Part2Sample(t *testing.T) {
-	_, err := parseInput(sampleInput)
+	pi, err := parseInput(sampleInput)
 	if err != nil {
 		t.Error(err)
+	}
+
+	alignAll(pi)
+
+	max := 0
+	for _, a := range pi.scanners {
+		for _, b := range pi.scanners {
+			dist := manhattan(a.position, b.position)
+			//fmt.Printf("%d %d: %v %v = %d\n", ai, bi, a.position, b.position, dist)
+			if dist > max {
+				max = dist
+			}
+		}
+	}
+
+	if max != 3621 {
+		t.Errorf("Expected max 3621, got %d", max)
 	}
 }
 
@@ -212,7 +233,7 @@ func TestDay19Part2(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := -1
+	expected := 12168
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}
