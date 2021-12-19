@@ -87,6 +87,41 @@ func allAxes() <-chan axis {
 	return ch
 }
 
+type axisPair struct {
+	right, up axis
+}
+
+// There's no doubt a formula to sort this out
+// but this is so much simpler to convince myself that it is right
+var axisLookup = map[axisPair]axis{
+	{X, Y}:   Z,
+	{X, -Y}:  -Z,
+	{-X, Y}:  -Z,
+	{-X, -Y}: Z,
+	{X, Z}:   -Y,
+	{X, -Z}:  Y,
+	{-X, Z}:  Y,
+	{-X, -Z}: -Y,
+	{Y, Z}:   X,
+	{Y, -Z}:  -X,
+	{-Y, Z}:  -X,
+	{-Y, -Z}: X,
+}
+
+func remainingAxis(right, up axis) axis {
+	result, ok := axisLookup[axisPair{right, up}]
+	if ok {
+		return result
+	}
+	result, ok = axisLookup[axisPair{up, right}]
+	if ok {
+		return -result
+	}
+
+	fmt.Printf("%d, %d\n", right, up)
+	panic("invalid axes")
+}
+
 type triple struct {
 	x, y, z int
 }
@@ -236,16 +271,15 @@ func align(a, b relativeBeacons) alignmentData {
 			if result.x.sameAxis(result.y) {
 				continue
 			}
-			for result.z = range allAxes() {
-				if result.x.sameAxis(result.z) || result.y.sameAxis(result.z) {
-					continue
-				}
-				// If we assume that the conversion from A to B is that
-				// B's x is A's 'x', etc, can we match 12 beacons
-				result.delta = backtrackingAlign(a.beacons, b.beacons, result.x, result.y, result.z)
-				if result.delta != zero {
-					return result
-				}
+			// We don't allow mirroring, only rotations
+			// so once the X and Y axes are fixed, the Z axis is as well
+			result.z = remainingAxis(result.x, result.y)
+
+			// If we assume that the conversion from A to B is that
+			// B's x is A's 'x', etc, can we match 12 beacons
+			result.delta = backtrackingAlign(a.beacons, b.beacons, result.x, result.y, result.z)
+			if result.delta != zero {
+				return result
 			}
 		}
 	}
@@ -340,16 +374,16 @@ func countBeacons(pi ParsedInput) int {
 	return beacons.Size()
 }
 
-func Part1(r io.Reader) (int, error) {
+func Part1(r io.Reader) (int, ParsedInput, error) {
 	input := common.ReadLinesToSlice(r)
 	pi, err := parseInput(input)
 	if err != nil {
-		return 0, err
+		return 0, pi, err
 	}
 
 	alignAll(pi)
 
-	return countBeacons(pi), nil
+	return countBeacons(pi), pi, nil
 }
 
 func iabs(i int) int {
@@ -364,15 +398,7 @@ func manhattan(a, b triple) int {
 	return iabs(a.x-b.x) + iabs(a.y-b.y) + iabs(a.z-b.z)
 }
 
-func Part2(r io.Reader) (int, error) {
-	input := common.ReadLinesToSlice(r)
-	pi, err := parseInput(input)
-	if err != nil {
-		return 0, err
-	}
-
-	alignAll(pi)
-
+func Part2(pi ParsedInput) (int, error) {
 	max := 0
 	for _, a := range pi.scanners {
 		for _, b := range pi.scanners {

@@ -179,14 +179,14 @@ func TestDay19Part1Sample(t *testing.T) {
 	}
 }
 
-func zTestDay19Part1(t *testing.T) {
+func TestDay19Part1(t *testing.T) {
 	d19i, err := os.Open("input.txt")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	defer d19i.Close()
-	result, err := Part1(d19i)
+	result, _, err := Part1(d19i)
 	if err != nil {
 		t.Error(err)
 		return
@@ -228,7 +228,12 @@ func TestDay19Part2(t *testing.T) {
 		return
 	}
 	defer d19i.Close()
-	result, err := Part2(d19i)
+	_, pi, err := Part1(d19i)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	result, err := Part2(pi)
 	if err != nil {
 		t.Error(err)
 		return
