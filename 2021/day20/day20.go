@@ -118,6 +118,10 @@ func evolveGrid(pi ParsedInput) ParsedInput {
 	result.ymax = pi.ymax + 2
 	result.iteration = pi.iteration + 1
 
+	// This doesn't work if rule[0] != '.' since
+	// it assumes that only points adjacent to an on-tile become on
+	// The 'dumb' approach of considering everything within the window
+	// handles that just fine though
 	/*for p, _ := range pi.grid {
 		for dx := -1; dx < 2; dx++ {
 			for dy := -1; dy < 2; dy++ {
