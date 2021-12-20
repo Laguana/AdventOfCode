@@ -112,10 +112,10 @@ func evolveGrid(pi ParsedInput) ParsedInput {
 	result := ParsedInput{}
 	result.grid = make(goLGrid)
 	result.rule = pi.rule
-	result.xmin = pi.xmin - 2
-	result.xmax = pi.xmax + 2
-	result.ymin = pi.ymin - 2
-	result.ymax = pi.ymax + 2
+	result.xmin = pi.xmin - 1
+	result.xmax = pi.xmax + 1
+	result.ymin = pi.ymin - 1
+	result.ymax = pi.ymax + 1
 	result.iteration = pi.iteration + 1
 
 	// This doesn't work if rule[0] != '.' since
@@ -133,16 +133,11 @@ func evolveGrid(pi ParsedInput) ParsedInput {
 		}
 	}*/
 
-	for x := result.xmin; x <= result.xmax; x++ {
-		for y := result.ymin; y <= result.ymax; y++ {
+	for x := result.xmin - 1; x <= result.xmax+1; x++ {
+		for y := result.ymin - 1; y <= result.ymax+1; y++ {
 			p := pair{x, y}
-			for dx := -1; dx < 2; dx++ {
-				for dy := -1; dy < 2; dy++ {
-					pc := pair{p.x + dx, p.y + dy}
-					if evolvePoint(pi, pc) {
-						result.grid[pc] = true
-					}
-				}
+			if evolvePoint(pi, p) {
+				result.grid[p] = true
 			}
 		}
 	}
