@@ -20,6 +20,7 @@ import (
 	"AoC2021/day7"
 	"AoC2021/day8"
 	"AoC2021/day9"
+	"flag"
 	"fmt"
 	"os"
 )
@@ -621,7 +622,10 @@ func doDay19() {
 	}
 }
 
+var includeSlow = flag.Bool("includeSlow", false, "Run slow days")
+
 func main() {
+	flag.Parse()
 	doDay1()
 	doDay2()
 	doDay3()
@@ -640,5 +644,10 @@ func main() {
 	doDay16()
 	doDay17()
 	doDay18()
-	doDay19()
+	if *includeSlow {
+		doDay19()
+	} else {
+		fmt.Printf("%v %v\n", includeSlow, *includeSlow)
+		fmt.Println("Skipping day19 as slow")
+	}
 }
