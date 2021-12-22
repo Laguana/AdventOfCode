@@ -152,7 +152,7 @@ func (o *octree) update(on bool, x, y, z pair) bool {
 	z = z.clamp(o.z, o.z+o.size-1)
 	// the new x/y/z are now strictly within bounds
 
-	fmt.Printf("(%d,%d,%d)x%d / %v %v %v\n", o.x, o.y, o.z, o.size, x, y, z)
+	//fmt.Printf("(%d,%d,%d)x%d / %v %v %v\n", o.x, o.y, o.z, o.size, x, y, z)
 
 	if o.x == x.a && o.y == y.a && o.z == z.a &&
 		x.b-x.a == o.size-1 && y.b-y.a == o.size-1 && z.b-z.a == o.size-1 {
@@ -272,7 +272,7 @@ func (a prism) intersect(b prism) prism {
 
 func (a prism) collides(b prism) bool {
 	t := a.intersect(b)
-	return t.x.a < t.x.b && t.y.a < t.y.b && t.z.a < t.z.b
+	return t.x.a <= t.x.b && t.y.a <= t.y.b && t.z.a <= t.z.b
 }
 
 func (a prism) subtract(b prism) []prism {
@@ -353,6 +353,11 @@ type constructiveScene struct {
 	children []*constructiveScene
 }
 
+// prisms are inclusive of their endpoints
+func (p prism) valid() bool {
+	return p.x.b >= p.x.a && p.y.b >= p.y.a && p.z.b >= p.z.a
+}
+
 func (cs *constructiveScene) count() (size, other int, on bool) {
 	//fmt.Printf("%v\n", *cs)
 	size = (cs.bounds.x.b - cs.bounds.x.a + 1) * (cs.bounds.y.b - cs.bounds.y.a + 1) * (cs.bounds.z.b - cs.bounds.z.a + 1)
@@ -378,7 +383,11 @@ func (cs *constructiveScene) add(on bool, p prism) (modified bool, removed bool)
 	modified = false
 	removed = false
 	p = p.intersect(cs.bounds)
+	if !p.valid() {
+		return
+	}
 	if p == cs.bounds {
+		//fmt.Printf("Whole region: %v\n", p)
 		// this whole area is now set to this value
 		if on == cs.on {
 			// remove all children
@@ -391,6 +400,7 @@ func (cs *constructiveScene) add(on bool, p prism) (modified bool, removed bool)
 			modified = true
 			removed = true
 		}
+		//fmt.Printf("Whole region: %v %v \n", removed, *cs)
 		return
 	}
 	if on == cs.on {
@@ -438,6 +448,10 @@ func (cs *constructiveScene) add(on bool, p prism) (modified bool, removed bool)
 					}
 					prisms.Remove(pint)
 					for _, pnew := range pe.subtract(v.bounds) {
+						if !pnew.valid() {
+							fmt.Printf("%v - %v has %v?\n", pe, v.bounds, pnew)
+							panic("Invalid prism somehow")
+						}
 						prisms.Add(pnew)
 					}
 				}
@@ -446,6 +460,10 @@ func (cs *constructiveScene) add(on bool, p prism) (modified bool, removed bool)
 
 		for _, vint := range prisms.AsSlice() {
 			pe := vint.(prism)
+			if !pe.valid() {
+				fmt.Printf("%v %v %v \n", pe, *cs, p)
+				panic("Invalid prism somehow???")
+			}
 			//fmt.Printf("Adding child %v\n", pe)
 			cs.children = append(cs.children, &constructiveScene{on: on, bounds: pe, children: nil})
 			modified = true
@@ -463,33 +481,38 @@ func Part2(r io.Reader) (int, error) {
 		return 0, err
 	}
 
-	pow := 1
-	for _, instr := range pi.steps {
-		for iabs(instr.x.a) > pow {
-			pow <<= 1
+	x := pair{0, 0}
+	y := pair{0, 0}
+	z := pair{0, 0}
+	for _, v := range pi.steps {
+		if v.x.a < x.a {
+			x.a = v.x.a
 		}
-		for iabs(instr.x.b) > pow {
-			pow <<= 1
+		if v.x.b > x.b {
+			x.b = v.x.b
 		}
-		for iabs(instr.y.a) > pow {
-			pow <<= 1
+		if v.y.a < y.a {
+			y.a = v.y.a
 		}
-		for iabs(instr.y.b) > pow {
-			pow <<= 1
+		if v.y.b > y.b {
+			y.b = v.y.b
 		}
-		for iabs(instr.z.a) > pow {
-			pow <<= 1
+		if v.z.a < z.a {
+			z.a = v.z.a
 		}
-		for iabs(instr.z.b) > pow {
-			pow <<= 1
+		if v.z.b > z.b {
+			z.b = v.z.b
 		}
 	}
 
-	/*o := newOctree(-pow, -pow, -pow, pow*2, false)
-	for i, instr := range pi.steps {
-		o.update(instr.on, instr.x, instr.y, instr.z)
-		fmt.Printf("Step %d\n", i)
-	}*/
+	space := &constructiveScene{on: false, bounds: prism{x: x, y: y, z: z}}
 
-	return pow, nil
+	for _, instr := range pi.steps {
+		space.add(instr.on, prism{instr.x, instr.y, instr.z})
+		//fmt.Printf("Step %d\n", i)
+	}
+
+	_, on, _ := space.count()
+
+	return on, nil
 }
