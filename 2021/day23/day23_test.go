@@ -1,6 +1,7 @@
 package day23
 
 import (
+	"AoC2021/common"
 	"os"
 	"strings"
 	"testing"
@@ -27,9 +28,9 @@ func TestDay23Part1Sample(t *testing.T) {
 		}
 	*/
 
-	cost := astar(pi.state, isSolved)
-	if cost != 12521 {
-		t.Errorf("Expected least cost to be 12521, got %d", cost)
+	result := common.Astar(pi.state, isSolved, estimateCost)
+	if result.Cost != 12521 {
+		t.Errorf("Expected least cost to be 12521, got %d", result.Cost)
 	}
 
 }
@@ -71,7 +72,7 @@ func TestDay23Part2(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	expected := -1
+	expected := 41366
 	if result != expected {
 		t.Errorf("Expected %d, got %d", expected, result)
 	}

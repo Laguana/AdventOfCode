@@ -2,7 +2,6 @@ package day23
 
 import (
 	"AoC2021/common"
-	"fmt"
 	"io"
 )
 
@@ -222,15 +221,10 @@ func roomHallwayCost(s roomState, room, hallway int) (int, int) {
 	return steps + s2, elt
 }
 
-type stateCost struct {
-	state roomState
-	cost  int
-}
-
 var costLookup [4]int = [4]int{1, 10, 100, 1000}
 
-func (s roomState) successors() <-chan stateCost {
-	ch := make(chan stateCost)
+func (s roomState) Successors() <-chan common.SearchStateSuccessor {
+	ch := make(chan common.SearchStateSuccessor)
 
 	go func() {
 		for i := 0; i < 7; i++ {
@@ -262,7 +256,7 @@ func (s roomState) successors() <-chan stateCost {
 				t.rooms[elt-1][0] = elt
 			}
 
-			ch <- stateCost{t, dCost}
+			ch <- common.SearchStateSuccessor{t, dCost}
 		}
 		// moving from room to hallway
 		for room := 0; room < 4; room++ {
@@ -294,7 +288,7 @@ func (s roomState) successors() <-chan stateCost {
 				} else {
 					panic("Moving from wrong place?")
 				}
-				ch <- stateCost{t, dCost}
+				ch <- common.SearchStateSuccessor{t, dCost}
 			}
 		}
 		close(ch)
@@ -303,7 +297,8 @@ func (s roomState) successors() <-chan stateCost {
 	return ch
 }
 
-func estimateCost(s roomState) int {
+func estimateCost(ss common.SearchState) int {
+	s := ss.(roomState)
 	/*
 		#01.2.3.4.56#
 		###D#B#D#A###
@@ -331,7 +326,7 @@ func estimateCost(s roomState) int {
 
 }
 
-func sanityCheck(s roomState) bool {
+func (s roomState) Valid() bool {
 	counts := [4]int{0, 0, 0, 0}
 	for _, v := range s.hallway {
 		if v != 0 {
@@ -369,7 +364,8 @@ func sanityCheck(s roomState) bool {
 	return true
 }
 
-func isSolved(s roomState) bool {
+func isSolved(ss common.SearchState) bool {
+	s := ss.(roomState)
 	for _, e := range s.hallway {
 		if e != 0 {
 			return false
@@ -403,69 +399,6 @@ func (snm searchNodeMap) get(s roomState) *searchNode {
 	return v
 }
 
-func astar(start roomState, done func(roomState) bool) int {
-	snm := searchNodeMap{}
-	openList := make([]*searchNode, 0)
-
-	startn := snm.get(start)
-	startn.open = true
-	startn.heuristic = estimateCost(start)
-	openList = append(openList, startn)
-
-	steps := 0
-	for len(openList) > 0 {
-		mini := 0
-		minf := 99999999
-		for i, v := range openList {
-			if v.cost+v.heuristic < minf {
-				mini = i
-				minf = v.cost + v.heuristic
-			}
-		}
-		sn := openList[mini]
-		openList = append(openList[:mini], openList[mini+1:]...)
-
-		if sn.closed {
-			continue
-		}
-
-		sn.closed = true
-
-		steps++
-		if steps%1000 == 0 {
-			fmt.Printf("%d: %d, %v\n", steps, len(openList), sn)
-		}
-
-		if done(sn.state) {
-			return sn.cost
-		}
-		for next := range sn.state.successors() {
-			if !sanityCheck(next.state) {
-				fmt.Printf("%v lead to invalid state %v\n", sn.state, next.state)
-				panic("Invalid state")
-			}
-			//fmt.Printf("Succ: %v\n", next)
-			s := snm.get(next.state)
-			if s.closed {
-				continue
-			}
-			cost := sn.cost + next.cost
-			heuristic := estimateCost(next.state)
-			if s.open && s.cost+s.heuristic < cost+heuristic {
-				// already have a better path
-				continue
-			}
-			s.parent = sn
-			s.cost = cost
-			s.heuristic = heuristic
-			s.open = true
-
-			openList = append(openList, s)
-		}
-	}
-	return -1
-}
-
 func Part1(r io.Reader) (int, error) {
 	input := common.ReadLinesToSlice(r)
 	pi, err := parseInput(input)
@@ -473,9 +406,9 @@ func Part1(r io.Reader) (int, error) {
 		return 0, err
 	}
 
-	cost := astar(pi.state, isSolved)
+	result := common.Astar(pi.state, isSolved, estimateCost)
 
-	return cost, nil
+	return result.Cost, nil
 }
 
 func adjustForPart2(s roomState) roomState {
@@ -504,7 +437,7 @@ func Part2(r io.Reader) (int, error) {
 
 	p2s := adjustForPart2(pi.state)
 
-	cost := astar(p2s, isSolved)
+	result := common.Astar(p2s, isSolved, estimateCost)
 
-	return cost, nil
+	return result.Cost, nil
 }

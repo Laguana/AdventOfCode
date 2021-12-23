@@ -16,6 +16,7 @@ import (
 	"AoC2021/day20"
 	"AoC2021/day21"
 	"AoC2021/day22"
+	"AoC2021/day23"
 	"AoC2021/day3"
 	"AoC2021/day4"
 	"AoC2021/day5"
@@ -721,6 +722,38 @@ func doDay22() {
 	}
 }
 
+func doDay23() {
+	{
+		d23i, err := os.Open("day23/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d23i.Close()
+		d23p1, err := day23.Part1(d23i)
+		if err != nil {
+			fmt.Println("Day 23 Part 1 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 23 Part 1: %d\n", d23p1)
+	}
+
+	{
+		d23i, err := os.Open("day23/input.txt")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer d23i.Close()
+		d23p2, err := day23.Part2(d23i)
+		if err != nil {
+			fmt.Println("Day 23 Part 2 had an error: ", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Day 23 Part 2: %d\n", d23p2)
+	}
+}
+
 var includeSlow = flag.Bool("includeSlow", false, "Run slow days")
 
 func main() {
@@ -751,4 +784,5 @@ func main() {
 	doDay20()
 	doDay21()
 	doDay22()
+	doDay23()
 }
