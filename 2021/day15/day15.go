@@ -8,6 +8,7 @@ import (
 type ParsedInput struct {
 	width, height int
 	grid          [][]int
+	larger        bool
 }
 
 func parseInput(s []string) (ParsedInput, error) {
@@ -16,6 +17,7 @@ func parseInput(s []string) (ParsedInput, error) {
 	result.height = len(s)
 	result.width = len(s[0])
 	result.grid = make([][]int, result.height)
+	result.larger = false
 
 	for y, v := range s {
 		result.grid[y] = make([]int, result.width)
@@ -29,6 +31,7 @@ func parseInput(s []string) (ParsedInput, error) {
 
 type pair struct {
 	x, y int
+	grid *ParsedInput
 }
 
 type searchNode struct {
@@ -51,99 +54,52 @@ func manhattanDistance(a, b pair) int {
 	return iabs(a.x-b.x) + iabs(a.y-b.y)
 }
 
-type searchNodeMap map[pair]*searchNode
-
-func (snm searchNodeMap) get(p pair) *searchNode {
-	v, ok := snm[p]
-	if !ok {
-		v = &searchNode{pos: p}
-		snm[p] = v
+func isDest(dest pair) func(common.SearchState) bool {
+	return func(a common.SearchState) bool {
+		return a.(pair) == dest
 	}
-	return v
 }
 
-func astar(pi ParsedInput, start, stop pair, long bool) int {
-	width := pi.width
-	height := pi.height
-	if long {
+func manhattanToDest(dest pair) func(common.SearchState) int {
+	return func(a common.SearchState) int {
+		return manhattanDistance(a.(pair), dest)
+	}
+}
+
+func (p pair) Valid() bool {
+	width := p.grid.width
+	height := p.grid.height
+	if p.grid.larger {
 		width *= 5
 		height *= 5
 	}
+	return p.x >= 0 && p.y >= 0 && p.x < width && p.y < height
+}
 
-	snm := searchNodeMap{}
-	openList := make([]*searchNode, 0)
-
-	startn := snm.get(start)
-	startn.open = true
-	startn.heuristic = manhattanDistance(start, stop)
-	openList = append(openList, startn)
-
-	//progress := 0
-
-	for len(openList) > 0 {
-		mini := 0
-		minf := 99999999
-		for i, v := range openList {
-			if v.cost+v.heuristic < minf {
-				mini = i
-				minf = v.cost + v.heuristic
+func (p pair) Successors() <-chan common.SearchStateSuccessor {
+	ch := make(chan common.SearchStateSuccessor)
+	go func() {
+		maybeSucc := func(q pair) *common.SearchStateSuccessor {
+			if !q.Valid() {
+				return nil
 			}
+			return &common.SearchStateSuccessor{q, tileCost(*q.grid, q)}
 		}
-		sn := openList[mini]
-		openList = append(openList[:mini], openList[mini+1:]...)
-
-		if sn.closed {
-			continue
+		if candidate := maybeSucc(pair{x: p.x + 1, y: p.y, grid: p.grid}); candidate != nil {
+			ch <- *candidate
 		}
-
-		sn.closed = true
-
-		/*
-			progress++
-			if progress%1000 == 0 {
-				fmt.Printf("%d: %d, %v\n", progress, len(openList), sn)
-			}
-			// */
-
-		if sn.pos == stop {
-			// Found the end
-			/*
-				t := sn
-				for t != nil {
-					fmt.Println(t)
-					t = t.parent
-				} // */
-			return sn.cost
+		if candidate := maybeSucc(pair{x: p.x - 1, y: p.y, grid: p.grid}); candidate != nil {
+			ch <- *candidate
 		}
-		// generate successors
-		addSucc := func(nPos pair) {
-			if nPos.x < 0 || nPos.y < 0 || nPos.x >= width || nPos.y >= height {
-				return
-			}
-			s := snm.get(nPos)
-			if s.closed {
-				return
-			}
-			cost := sn.cost + tileCost(pi, nPos)
-			heuristic := manhattanDistance(nPos, stop)
-			if s.open && s.cost+s.heuristic < cost+heuristic {
-				// already have a better path
-				return
-			}
-			s.parent = sn
-			s.cost = cost
-			s.heuristic = heuristic
-			s.open = true
-
-			openList = append(openList, s)
+		if candidate := maybeSucc(pair{x: p.x, y: p.y + 1, grid: p.grid}); candidate != nil {
+			ch <- *candidate
 		}
-		addSucc(pair{x: sn.pos.x + 1, y: sn.pos.y})
-		addSucc(pair{x: sn.pos.x - 1, y: sn.pos.y})
-		addSucc(pair{x: sn.pos.x, y: sn.pos.y + 1})
-		addSucc(pair{x: sn.pos.x, y: sn.pos.y - 1})
-	}
-
-	return -1
+		if candidate := maybeSucc(pair{x: p.x, y: p.y - 1, grid: p.grid}); candidate != nil {
+			ch <- *candidate
+		}
+		close(ch)
+	}()
+	return ch
 }
 
 func tileCost(pi ParsedInput, p pair) int {
@@ -219,7 +175,7 @@ func Part1(r io.Reader) (int, error) {
 		return 0, err
 	}
 
-	fmap := floodMap(pi, pair{x: pi.width - 1, y: pi.height - 1}, false)
+	fmap := floodMap(pi, pair{x: pi.width - 1, y: pi.height - 1, grid: &pi}, false)
 
 	return fmap[0][0] - pi.grid[0][0], nil
 }
@@ -230,10 +186,11 @@ func Part2(r io.Reader) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	cost := astar(pi, pair{x: 0, y: 0}, pair{x: pi.width*5 - 1, y: pi.height*5 - 1}, true)
+	pi.larger = true
+	goal := pair{x: pi.width*5 - 1, y: pi.height*5 - 1, grid: &pi}
+	result := common.Astar(pair{x: 0, y: 0, grid: &pi}, isDest(goal), manhattanToDest(goal))
 	//fmap := floodMap(pi, pair{x: pi.width*5 - 1, y: pi.height*5 - 1}, true)
 
 	//return fmap[0][0] - pi.grid[0][0], nil
-	return cost, nil
+	return result.Cost, nil
 }

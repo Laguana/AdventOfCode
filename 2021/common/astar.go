@@ -63,8 +63,6 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
-// update?
-
 func Astar(start SearchState, done func(SearchState) bool, heuristic func(SearchState) int) *SearchNode {
 	snm := searchNodeMap{}
 	openList := make(priorityQueue, 0)

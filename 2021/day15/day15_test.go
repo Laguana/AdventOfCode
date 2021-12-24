@@ -1,6 +1,7 @@
 package day15
 
 import (
+	"AoC2021/common"
 	"os"
 	"strings"
 	"testing"
@@ -35,9 +36,10 @@ func TestDay15Part1SampleAStar(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	cost := astar(pi, pair{x: 0, y: 0}, pair{x: pi.width - 1, y: pi.height - 1}, false)
-	if cost != 40 {
-		t.Errorf("A* should have been 40, was %d", cost)
+	goal := pair{x: pi.width - 1, y: pi.height - 1, grid: &pi}
+	result := common.Astar(pair{x: 0, y: 0, grid: &pi}, isDest(goal), manhattanToDest(goal))
+	if result.Cost != 40 {
+		t.Errorf("A* should have been 40, was %d", result.Cost)
 	}
 }
 
