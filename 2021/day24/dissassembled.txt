@@ -1,0 +1,289 @@
+                                        z = 0
+inp w           w = i0
+mul x 0         x = 0
+add x z
+mod x 26
+div z 1
+add x 13        x = 13
+eql x w         x = i0==13              cond0
+eql x 0         x = i0!=13              
+mul y 0         y = 0
+add y 25        y = 25
+mul y x         y = (i0!=13?25:0)
+add y 1         y = (i0!=13?26:1)
+mul z y                                 if i0 != 13 shift z by 26 otherwise don't
+mul y 0         y = 0
+add y w         y = i0
+add y 6         y = i0+6
+mul y x         y = (i0!= 13?i0+6:0)
+add z y                                 push i0+6 onto z if i0 isn't 13
+                                        z = [i0+6]
+
+inp w           w = i1
+mul x 0         x = 0
+add x z         x = z
+mod x 26        x = z%26
+div z 1
+add x 15        x = z%26 + 15
+eql x w         x = (i1==z%26+15)       cond1
+eql x 0         x = (i1!=z%26+15)       
+mul y 0         y = 0
+add y 25        
+mul y x
+add y 1         y = (cond1?1:26)
+mul z y                                 if i1 != z%26+15 shift z by 26 otherwise don't
+mul y 0         y = 0
+add y w         y = i1
+add y 7         y = i1+7
+mul y x         y = (cond1?i1+7:0)
+add z y                                 push i1+7 onto z if cond1 is false
+                                        z = [i0+6, i1+7]
+
+inp w           w = i2
+mul x 0         
+add x z         
+mod x 26        x = z%26
+div z 1
+add x 15        x = z%26+15
+eql x w         x = (i2==z%26+15)       cond2
+eql x 0         x = (i2!=z%26+15)       
+mul y 0         y = 0
+add y 25        
+mul y x
+add y 1         y = (cond2?1:26)
+mul z y                                 if i2 != z%26+15 shift z by 26 otherwise don't
+mul y 0         y = 0
+add y w         y = i2
+add y 10        y = i2 + 10
+mul y x         y = (cond2?i2+10:0)
+add z y                                 push i2+10 onto z if cond2 is false
+                                        z = [i0+6, i1+7, i2+10]
+
+inp w           w = i3
+mul x 0         x = 0
+add x z
+mod x 26
+div z 1
+add x 11        x = z%26+11
+eql x w         x = (i3==z%26+11)       cond3
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1         y = (!cond3?26:1)
+mul z y                                 if i3 != z%26+11 shift z by 26 otherwise dont
+mul y 0         y = 0
+add y w         y = i3
+add y 2         y = i3+2
+mul y x         y = (!cond3?i3+2:0)
+add z y                                 push i3+2 onto z if cond3 is false
+                                        z = [i0+6, i1+7, i2+10, i3+2]
+
+inp w           w = i4
+mul x 0
+add x z
+mod x 26
+div z 26        z = z/26                pop the last thing from z
+add x -7        x = z%26-7
+eql x w         x = i4==z%26-7          cond4                                               i4 == i3+2-7 -> i4 == i3-5
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1         y = (!cond4?26:1)
+mul z y                                 if i4 != z%26-7 shift z by 26 otherwise dont
+mul y 0
+add y w
+add y 15        y = i4+15
+mul y x         y = (!cond4?i4+15:0)
+add z y                                 push i4+15 onto z if cond4 is false
+                                        z = [i0+6, i1+7, i2+10] if i4 == i3-5
+
+inp w           w = i5
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10        
+eql x w         x = i5==z%26+10         cond5
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1         
+mul z y                                 if i5 != z%26+10 shift z by 26 otherwise don't
+mul y 0
+add y w
+add y 8
+mul y x         y = (!cond5?i5+8:0)
+add z y                                 push i5+8 onto z if cond5 is false
+                                        z = [i0+6, i1+7, i2+10, i5+8] if i4 == i3-5
+
+inp w           w = i6
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10        
+eql x w         x = i6==z%26+10         cond6
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y                                 if i6 != z%26+10 shift z by 26 otherwise don't
+mul y 0
+add y w
+add y 1         y = i6+1
+mul y x
+add z y                                 push i6+1 onto z if cond6 is false
+                                        z = [i0+6, i1+7, i2+10, i5+8, i6+1] if i4 == i3-5
+
+inp w           w = i7
+mul x 0
+add x z
+mod x 26
+div z 26                                pop value from z
+add x -5        x = z%26-5
+eql x w         x = i7==z%26-5          cond7                                               i7 == i6+1-5 -> i7 == i6-4
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y                                 if i7 != z%26-5 shift z by 26 otherwise don't
+mul y 0
+add y w         
+add y 10        y = i7+10
+mul y x
+add z y                                 push i7+10 onto z if cond7 is false
+                                        z = [i0+6, i1+7, i2+10, i5+8] if i4 == i3-5, i7 == i6-4
+
+inp w           w = i8
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 15
+eql x w         x = i8==z%26 + 15       cond8
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y                                 if i8 != z%26+15 shift z by 26 otherwise don't
+mul y 0
+add y w
+add y 5         y = i8+5
+mul y x         
+add z y                                 push i8+5 onto z if cond8 is false
+                                        z = [i0+6, i1+7, i2+10, i5+8, i8+5] if i4 == i3-5, i7 == i6-4
+
+inp w           w = i9
+mul x 0
+add x z
+mod x 26
+div z 26                                pop z
+add x -3
+eql x w         x = i9 == z%26-3        cond9                                               i9 == i8+5-3 -> i9 == i8+2
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y                                 if i9 != z%26-3 shift z by 26 otherwise don't
+mul y 0
+add y w
+add y 3         y = i9 + 3
+mul y x
+add z y                                 push i9+3 onto z if cond9 is false
+                                        z = [i0+6, i1+7, i2+10, i5+8] if i4 == i3-5, i7 == i6-4, i9 == i8+2
+
+inp w           w = i10
+mul x 0
+add x z
+mod x 26
+div z 26                                pop z
+add x 0
+eql x w         x = i10==z%26           cond10                                              i10 == i5 + 8
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y                                 if i10 != z%26 shift z by 26 otherwise don't
+mul y 0
+add y w
+add y 5         y = i10+5
+mul y x
+add z y                                 push i10+5 onto z if cond10 is false
+                                        z = [i0+6, i1+7, i2+10] if i4 == i3-5, i7 == i6-4, i9 == i8+2, i10 == i5+8
+
+inp w           w = i11
+mul x 0
+add x z
+mod x 26
+div z 26                                pop z
+add x -5
+eql x w         x = i11==z%26-5         cond11                                              i11 == i2+10-5 -> i11 == i2+5
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y                                 if i11!= z%26-5 shift z by 26 otherwise don't
+mul y 0
+add y w
+add y 11        y = i11+11
+mul y x
+add z y                                 push i11+11 onto z if cond11 is false
+                                        z = [i0+6, i1+7] if i4 == i3-5, i7 == i6-4, i9 == i8+2, i10 == i5+8, i11 == i2+5
+
+inp w           w = i12
+mul x 0
+add x z
+mod x 26
+div z 26                                pop z
+add x -9
+eql x w         x = i12==z%26-9         cond12                                              i12==i1+7-9 -> i12 == i1-2
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y                                 if i12 != z%26-9 shift z by 26 otherwise don't
+mul y 0
+add y w
+add y 12        y = i12+12
+mul y x
+add z y                                 push i12+12 onto z if cond12 is false
+                                        z = [i0+6] if i4 == i3-5, i7 == i6-4, i9 == i8+2, i10 == i5+8, i11 == i2+5, i12 == i1-2
+
+inp w           w = i13
+mul x 0
+add x z
+mod x 26
+div z 26                                pop z
+add x 0
+eql x w         x = i13== z%26          cond13                                              i13 == i0+6
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 10
+mul y x
+add z y
+                                        z = [] if i4 == i3-5, i7 == i6-4, i9 == i8+2, i10 == i5+8, i11 == i2+5, i12 == i1-2, i13 = i0+6
+
+// maximised at
+
+0123456789ABCD
+39494195799979
+
+// minimised at
+0123456789ABCD
+13161151139617
