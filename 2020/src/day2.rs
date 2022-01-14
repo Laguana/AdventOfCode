@@ -15,6 +15,19 @@ struct PasswordRule {
     character: char,
 }
 
+impl std::fmt::Display for PasswordRule {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}-{} '{}'", self.min, self.max, self.character)
+    }
+}
+
+#[test]
+fn password_rule_display_works() {
+    let rule = PasswordRule{min: 0, max: 2, character: 'x'};
+    let displayed = format!("{}", rule);
+    assert_eq!(displayed, "0-2 'x'")
+}
+
 struct Input {
     cases: Vec<(PasswordRule, String)>,
 }
@@ -33,7 +46,7 @@ impl FromStr for Input {
                 if parts.len() != 3 {
                     return Err(ParseError);
                 }
-                let password = parts[2].to_string();
+                let password = parts[2].trim().to_string();
                 let character = parts[1].chars().nth(0);
                 if character.is_none() {
                     return Err(ParseError);
@@ -66,13 +79,17 @@ fn parse_input(input: &str) -> Input {
 
 fn password_is_valid(rule: &PasswordRule, password: &str) -> bool {
     let count = password.chars().filter(|c| *c == rule.character).count();
-    return count >= rule.min.into() && count <= rule.max.into()
+    return count >= rule.min.into() && count <= rule.max.into();
 }
 
 fn count_valid_passwords(input: &Input) -> u32 {
-    input.cases.iter()
+    input
+        .cases
+        .iter()
         .filter(|(rule, password)| password_is_valid(rule, password))
-        .count().try_into().unwrap()
+        .count()
+        .try_into()
+        .unwrap()
 }
 
 pub fn part1() -> u32 {
@@ -84,4 +101,46 @@ pub fn part1() -> u32 {
 fn part1_works() {
     let result = part1();
     assert_eq!(result, 580);
+}
+
+#[test]
+fn part2_sample_works() {
+    let input = include_str!("inputs/day2.sample");
+    let input = parse_input(input);
+    let n_valid = count_valid_passwords_2(&input);
+    assert_eq!(n_valid, 1);
+}
+
+fn password_is_valid_2(rule: &PasswordRule, password: &str) -> bool {
+    let c1 = password
+        .chars()
+        .nth((rule.min-1).into())
+        .expect("This is supposed to be a valid index");
+    let c2 = password
+        .chars()
+        .nth((rule.max-1).into())
+        .expect("This is supposed to be a valid index");
+    //println!("rule {} password {} c1 {} c2 {}", rule, password, c1, c2);
+    return (c1 == rule.character) != (c2 == rule.character);
+}
+
+fn count_valid_passwords_2(input: &Input) -> u32 {
+    input
+        .cases
+        .iter()
+        .filter(|(rule, password)| password_is_valid_2(rule, password))
+        .count()
+        .try_into()
+        .unwrap()
+}
+
+pub fn part2() -> u32 {
+    let input = parse_input(include_str!("inputs/day2.txt"));
+    count_valid_passwords_2(&input)
+}
+
+#[test]
+fn part2_works() {
+    let result = part2();
+    assert_eq!(result, 611);
 }
