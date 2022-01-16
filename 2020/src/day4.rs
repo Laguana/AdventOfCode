@@ -46,14 +46,26 @@ fn parse_input(s: &str) -> Input {
 
 static REQUIRED_KEYS: [&str; 7] = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
 
-fn is_valid(passport: &HashMap<String, String>) -> bool {
-    REQUIRED_KEYS
+fn is_valid(passport: &HashMap<String, String>, complex: bool) -> bool {
+    if !complex {
+        return REQUIRED_KEYS
         .iter()
         .all(|key| passport.contains_key(&key.to_string()))
+    } else {
+        return REQUIRED_KEYS
+        .iter()
+        .all(|key| {
+            let key = key.to_string();
+            let result =  passport.contains_key(&key)
+                && validate_key(&key[..], &passport[&key][..]);
+            //println!("> {:?} {:?} {}", key, passport, result);
+            return result;
+        })
+    }
 }
 
 fn count_valid(input: &Input) -> usize {
-    input.passports.iter().filter(|p| is_valid(p)).count()
+    input.passports.iter().filter(|p| is_valid(p, false)).count()
 }
 
 pub fn part1() -> usize {
@@ -63,5 +75,72 @@ pub fn part1() -> usize {
 
 #[test]
 fn part1_works() {
-    assert_eq!(part1(),0)
+    assert_eq!(part1(),204)
+}
+
+static VALID_EYES: [&str; 7] = ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"];
+
+fn validate_key(key: &str, value: &str) -> bool {
+    return match key {
+        "byr" => {
+            match value.parse::<u32>() {
+                Err(_) => false,
+                Ok(v) => v >= 1920 && v <= 2002
+            }
+        },
+        "iyr" => {
+            match value.parse::<u32>() {
+                Err(_) => false,
+                Ok(v) => v >= 2010 && v <= 2020
+            }
+        },
+        "eyr" => {
+            match value.parse::<u32>() {
+                Err(_) => false,
+                Ok(v) => v >= 2020 && v <= 2030
+            }
+        },
+        "hgt" => {
+            let len = value.len();
+            match &value[len-2..] {
+                "in" => 
+                    match value[..len-2].parse::<u32>() {
+                        Err(_) => false,
+                        Ok(v) => v >= 59 && v <= 76
+                    },
+                "cm" => 
+                    match value[..len-2].parse::<u32>() {
+                        Err(_) => false,
+                        Ok(v) => v >= 150 && v <= 193
+                    },
+                _ => false
+            }
+        },
+        "hcl" => {
+            value.len() == 7 
+                && &value[0..1] == "#"
+                && value[1..].chars().all(|c| (c >= '0' && c <= '9')||(c >= 'a' && c <= 'f'))
+        },
+        "ecl" => {
+            VALID_EYES.contains(&value)
+        },
+        "pid" => {
+            value.len() == 9 && value.chars().all(|c| c >= '0' && c <= '9')
+        },
+        _ => false
+    }
+}
+
+fn count_valid_2(input: &Input) -> usize {
+    input.passports.iter().filter(|p| is_valid(p, true)).count()
+}
+
+pub fn part2() -> usize {
+    let input = parse_input(include_str!("inputs/day4.txt"));
+    count_valid_2(&input)
+}
+
+#[test]
+fn part2_works() {
+    assert_eq!(part2(),179)
 }
