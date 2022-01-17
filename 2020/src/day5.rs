@@ -39,3 +39,22 @@ pub fn part1() -> u16 {
 fn part1_works() {
     assert_eq!(part1(), 930)   
 }
+
+pub fn part2() -> u16 {
+    let mut input = parse_input(include_str!("inputs/day5.txt"));
+    input.passes.sort();
+    let mut prev = input.passes[0];
+    for &v in input.passes[1..].iter() {
+        if v != prev+1 {
+            return prev+1;
+        } else {
+            prev = v;
+        }
+    }
+    panic!("Should have found the seat")
+}
+
+#[test]
+fn part2_works() {
+    assert_eq!(part2(), 515)
+}
