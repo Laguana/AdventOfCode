@@ -68,7 +68,7 @@ fn sum_all(input: &Input) -> usize {
             acc.intersection(&se).cloned().collect()
         });
         
-        println!("{:?} -> {:?}", v, s);
+        //println!("{:?} -> {:?}", v, s);
         return s.iter().count()
     }).fold(0, |acc, b| acc + b)
 }
