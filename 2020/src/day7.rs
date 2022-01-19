@@ -118,3 +118,23 @@ pub fn part1() -> usize {
 fn part1_works() {
     assert_eq!(part1(), 197)
 }
+
+fn bags_contained(input: &Input, target: &str) -> u32 {
+    input.rules[target].iter().fold(0, |acc, (c, t)| acc + c*(1+bags_contained(input, t)))
+}
+
+#[test]
+fn part2_sample_works() {
+    let input = parse_input(include_str!("inputs/day7.sample"));
+    assert_eq!(bags_contained(&input, "shiny gold"), 32)
+}
+
+pub fn part2() -> u32 {
+    let input = parse_input(include_str!("inputs/day7.txt"));
+    return bags_contained(&input, "shiny gold");
+}
+
+#[test]
+fn part2_works() {
+    assert_eq!(part2(), 85324)
+}
