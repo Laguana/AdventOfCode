@@ -58,3 +58,41 @@ pub fn part1() -> u64 {
 fn part1_works() {
     assert_eq!(part1(), 36845998)
 }
+
+#[test]
+fn part2_sample_works() {
+    let input = parse_input(include_str!("inputs/day9.sample"));
+    let result = find_non_sum(&input, 5);
+    let (min, max) = find_sum_range(&input, result);
+    assert_eq!((min, max), (15, 40))
+}
+
+fn find_sum_range(input: &Vec<u64>, summand: u64) -> (u64, u64) {
+    let mut l_idx = 0;
+    let mut r_idx = 1;
+    let mut sum = input[l_idx] + input[r_idx];
+
+    while sum != summand {
+        if sum < summand {
+            r_idx += 1;
+            sum += input[r_idx];
+        } else {
+            sum -= input[l_idx];
+            l_idx += 1;
+        }
+    }
+
+    return (input[l_idx], input[r_idx])
+}
+
+pub fn part2() -> u64 {
+    let input = parse_input(include_str!("inputs/day9.txt"));
+    let target = find_non_sum(&input, 25);
+    let (a, b) = find_sum_range(&input, target);
+    return a+b
+}
+
+#[test]
+fn part2_works() {
+    assert_eq!(part2(), 4830226)
+}
