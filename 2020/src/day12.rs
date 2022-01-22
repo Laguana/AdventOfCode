@@ -52,7 +52,7 @@ fn execute_steps(input: &Vec<Instruction>) -> (i16, i16) {
                     1 => y -= v,
                     2 => x -= v,
                     3 => y += v,
-                    _ => panic!("arithmetic should have reduced to one of the previous cases")
+                    _ => unreachable!("Should be impossible after mod")
                 }
             }
         }
@@ -69,4 +69,63 @@ pub fn part1() -> i16 {
 #[test]
 fn part1_works() {
     assert_eq!(part1(), 521)
+}
+
+#[test]
+fn part2_sample_works() {
+    let input = parse_input(include_str!("inputs/day12.sample"));
+    let result = execute_with_waypoint(&input);
+    assert_eq!(result, (214,-72))
+}
+
+fn rotate(angle: i16, (x, y): (i16, i16)) -> (i16, i16) {
+    let angle = ((angle + 360)/90) % 4;
+    match angle {
+        0 => (x,y),
+        1 => (-y,x),
+        2 => (-x,-y),
+        3 => (y,-x),
+        _ => unreachable!("Should be impossible after mod")
+    }
+}
+
+fn execute_with_waypoint(input: &Vec<Instruction>) -> (i16, i16) {
+    let mut x = 0;
+    let mut y = 0;
+    let mut waypoint_x = 10;
+    let mut waypoint_y = 1;
+    for i in input {
+        match i {
+            Instruction::East(v) => waypoint_x += v,
+            Instruction::West(v) => waypoint_x -= v,
+            Instruction::North(v) => waypoint_y += v,
+            Instruction::South(v) => waypoint_y -= v,
+            Instruction::Left(v) => {
+                let (new_waypoint_x, new_waypoint_y) = rotate(*v, (waypoint_x, waypoint_y));
+                waypoint_x = new_waypoint_x;
+                waypoint_y = new_waypoint_y;
+            },
+            Instruction::Right(v) => {
+                let (new_waypoint_x, new_waypoint_y) = rotate(-*v, (waypoint_x, waypoint_y));
+                waypoint_x = new_waypoint_x;
+                waypoint_y = new_waypoint_y;
+            },
+            Instruction::Forward(v) => {
+                x += waypoint_x * v;
+                y += waypoint_y * v;
+            }
+        }
+    }
+    (x,y)
+}
+
+pub fn part2() -> i16 {
+    let input = parse_input(include_str!("inputs/day12.txt"));
+    let (x,y) = execute_with_waypoint(&input);
+    return x.abs() + y.abs();
+}
+
+#[test]
+fn part2_works() {
+    assert_eq!(part2(), 22848)
 }
