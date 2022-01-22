@@ -1,7 +1,7 @@
 #[test]
 fn part1_sample_works() {
     let input = parse_input(include_str!("inputs/day11.sample"));
-    let seats = find_fixpoint(input);
+    let seats = find_fixpoint(input, false);
     assert_eq!(seats, 37)
 }
 
@@ -33,38 +33,50 @@ fn parse_input(input: &str) -> Vec<Vec<SeatState>> {
         .collect()
 }
 
-fn count_adjacent(input: &Vec<Vec<SeatState>>, (x, y): Point) -> u8 {
+fn count_adjacent(input: &Vec<Vec<SeatState>>, (x, y): Point, look_far: bool) -> u8 {
     let mut count = 0;
     let height = input.len();
     let width = input[0].len();
     for dy in -1..=1_i8 {
-        let y = y.wrapping_add(dy as usize);
-        if y >= height {
-            continue;
-        }
-        for dx in -1..=1_i8 {
+        'direction_: for dx in -1..=1_i8 {
             if dx == dy && dx == 0 {
                 continue;
             }
-            let x = x.wrapping_add(dx as usize);
-            if x >= width {
-                continue;
-            }
-            let e = input[y][x];
-            //println!(" ({},{}): {:?}", x, y, e);
-            if e == SeatState::Full {
-                count += 1;
+            let mut y = y.wrapping_add(dy as usize);
+            let mut x = x.wrapping_add(dx as usize);
+            loop {
+                if y >= height || x >= width {
+                    continue 'direction_;
+                }
+                let e = input[y][x];
+                //println!(" ({},{}): {:?}", x, y, e);
+
+                match e {
+                    SeatState::Full => {
+                        count += 1;
+                        break;
+                    },
+                    SeatState::Empty => break,
+                    SeatState::Floor => {
+                        if !look_far {
+                            break;
+                        } else {
+                            y = y.wrapping_add(dy as usize);
+                            x = x.wrapping_add(dx as usize);
+                        }
+                    }
+                }
             }
         }
     }
     return count;
 }
 
-fn step_cell(input: &Vec<Vec<SeatState>>, in_state: SeatState, (x, y): Point) -> SeatState {
+fn step_cell(input: &Vec<Vec<SeatState>>, in_state: SeatState, (x, y): Point, look_far: bool) -> SeatState {
     if in_state == SeatState::Floor {
         return SeatState::Floor;
     }
-    let adjacent = count_adjacent(input, (x, y));
+    let adjacent = count_adjacent(input, (x, y), look_far);
     //println!("({},{}): {}", x, y, adjacent);
     match in_state {
         SeatState::Empty => {
@@ -75,7 +87,7 @@ fn step_cell(input: &Vec<Vec<SeatState>>, in_state: SeatState, (x, y): Point) ->
             }
         }
         SeatState::Full => {
-            if adjacent >= 4 {
+            if adjacent >= 5 || (adjacent == 4 && !look_far) {
                 SeatState::Empty
             } else {
                 SeatState::Full
@@ -85,7 +97,7 @@ fn step_cell(input: &Vec<Vec<SeatState>>, in_state: SeatState, (x, y): Point) ->
     }
 }
 
-fn find_fixpoint(input: Vec<Vec<SeatState>>) -> usize {
+fn find_fixpoint(input: Vec<Vec<SeatState>>, look_far: bool) -> usize {
     let mut prev = input;
     loop {
         //print_state(&prev);
@@ -95,7 +107,7 @@ fn find_fixpoint(input: Vec<Vec<SeatState>>) -> usize {
             .map(|(y, r)| {
                 r.iter()
                     .enumerate()
-                    .map(|(x, &e)| step_cell(&prev, e, (x, y)))
+                    .map(|(x, &e)| step_cell(&prev, e, (x, y), look_far))
                     .collect::<Vec<_>>()
             })
             .collect();
@@ -133,10 +145,28 @@ fn print_state(grid: &Vec<Vec<SeatState>>) {
 
 pub fn part1() -> usize {
     let input = parse_input(include_str!("inputs/day11.txt"));
-    find_fixpoint(input)
+    find_fixpoint(input, false)
 }
 
 #[test]
 fn part1_works() {
     assert_eq!(part1(), 2448)
+}
+
+
+#[test]
+fn part2_sample_works() {
+    let input = parse_input(include_str!("inputs/day11.sample"));
+    let seats = find_fixpoint(input, true);
+    assert_eq!(seats, 26)
+}
+
+pub fn part2() -> usize {
+    let input = parse_input(include_str!("inputs/day11.txt"));
+    find_fixpoint(input, true)
+}
+
+#[test]
+fn part2_works() {
+    assert_eq!(part2(), 2234)
 }
