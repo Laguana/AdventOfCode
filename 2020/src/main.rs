@@ -54,5 +54,5 @@ fn main() {
     println!("Day 17 Part 1: {}", day17::part1());
     println!("Day 17 Part 2: {}", day17::part2());
     println!("Day 18 Part 1: {}", day18::part1());
-    //println!("Day 18 Part 2: {}", day18::part2());
+    println!("Day 18 Part 2: {}", day18::part2());
 }
