@@ -26,7 +26,8 @@ fn parse_input(input: &str) -> HashSet<Coord> {
         .collect()
 }
 
-fn determine_state(before: &HashSet<Coord>, (px, py, pz, pw): &Coord, part2: bool) -> bool {
+fn determine_state(before: &HashSet<Coord>, p: &Coord, part2: bool) -> bool {
+    let (px, py, pz, pw) = p;
     let mut on = 0;
     for dx in -1..=1 {
         for dy in -1..=1 {
@@ -38,12 +39,16 @@ fn determine_state(before: &HashSet<Coord>, (px, py, pz, pw): &Coord, part2: boo
                     }
                     if before.contains(&(px + dx, py + dy, pz + dz, pw + dw)) {
                         on += 1;
+
+                        if on > 3 {
+                            return false
+                        }
                     }
                 }
             }
         }
     }
-    match before.contains(&(*px, *py, *pz, *pw)) {
+    match before.contains(p) {
         false => on == 3,
         true => on == 2 || on == 3,
     }
@@ -52,38 +57,32 @@ fn determine_state(before: &HashSet<Coord>, (px, py, pz, pw): &Coord, part2: boo
 fn run_input(input: &HashSet<Coord>, steps: u32, part2: bool) -> usize {
     let mut state = input.clone();
 
-    for _ in 0..steps {
-        //println!("{}: {}", step, state.len());
+    for _step in 0..steps {
+        //println!("{}: {}", _step, state.len());
         let to_consider = state
             .iter()
-            .map(|(x, y, z, w)| {
-                (-1..=1)
-                    .map(|dx| {
-                        (-1..=1)
-                            .map(|dy| {
-                                (-1..=1)
-                                    .map(|dz| {
-                                        let w_range = if part2 { -1..=1 } else { 0..=0 };
-                                        w_range
-                                            .map(|dw| (x + dx, y + dy, z + dz, w + dw))
-                                            .collect::<HashSet<_>>()
-                                    })
-                                    .flatten()
-                                    .collect::<HashSet<_>>()
-                            })
-                            .flatten()
-                            .collect::<HashSet<_>>()
-                    })
-                    .flatten()
-                    .collect::<HashSet<_>>()
+            .flat_map(|(x, y, z, w)| {
+                let mut v = vec![];
+                for dx in -1..=1 {
+                    for dy in -1..=1 {
+                        for dz in -1..=1 {
+                            let w_range = if part2 { -1..=1 } else { 0..=0 };
+                            for dw in w_range {
+                                v.push((x+dx,y+dy,z+dz,w+dw));
+                            }
+                        }
+                    }
+                }
+                v
             })
-            .flatten()
             .collect::<HashSet<_>>();
+
+        //println!("{}", to_consider.len());
 
         state = to_consider
             .into_iter()
             .filter(|p| determine_state(&state, p, part2))
-            .collect::<HashSet<Coord>>();
+            .collect();
     }
     state.len()
 }
