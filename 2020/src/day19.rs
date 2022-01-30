@@ -56,7 +56,23 @@ fn parse_input(input: &str) -> Input {
     }
 }
 
+#[allow(unused)]
+fn has_loop(rule: &Rule, rule_idx: u16) -> bool {
+    match rule {
+        Rule::Sequence(v) => {
+            v.iter().any(|v| v.iter().any(|r| *r == rule_idx))
+        }
+        _ => false
+    }
+}
+
 fn matches_rule_(rules: &HashMap<u16, Rule>, rule_idx: u16, from: usize, s: &str) -> Vec<usize> {
+    /*if has_loop(&rules[&rule_idx], rule_idx) {
+        return matches_rule_part2(rules, rule_idx, from, s);
+    }*/
+    if from >= s.len() {
+        return vec![];
+    }
     match &rules[&rule_idx] {
         Rule::Literal(c) => match s[from..=from].chars().nth(0) {
             None => vec![],
@@ -88,7 +104,31 @@ pub fn part1() -> usize {
     input.strings.iter().filter(|s| matches_rule(&input.rules, 0, &s[..])).count()
 }
 
+/*
+// I was going to try a fancier approach.... but the initial naive approach I had worked fine so whatever
+fn matches_rule_part2(rules: &HashMap<u16, Rule>, rule_idx: u16, from: usize, s: &str) -> Vec<usize> {
+    vec![]
+}
+*/
+
+fn update_rules_part2(input: &mut Input) {
+    input.rules.insert(8, Rule::Sequence(vec![vec![42], vec![42,8]]));
+    input.rules.insert(11, Rule::Sequence(vec![vec![42, 31], vec![42,11,31]]));
+}
+
 #[test]
 fn part1_works() {
     assert_eq!(part1(), 104)
+}
+
+pub fn part2() -> usize {
+    let mut input = parse_input(include_str!("inputs/day19.txt"));
+    update_rules_part2(&mut input);
+
+    input.strings.iter().filter(|s| matches_rule(&input.rules, 0, &s[..])).count()
+}
+
+#[test]
+fn part2_works() {
+    assert_eq!(part2(), 314)
 }
