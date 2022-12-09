@@ -89,6 +89,17 @@ fn move_knot_internal(knots: &mut [Position], dx: i16, dy: i16) {
         // both x and y differ, so it must actually be adjacent; no move necessary
         return;
     } else {
+        /*
+        For part 1 (before refactoring some things and supporting multiple knots)
+
+        assert_eq!(diff, 3);
+        // we need to move diagonally to get adjacent again
+        // We must have already been diagonally adjacent,
+        // so we get dragged to where the head was
+        tail.x = head.x-dx;
+        tail.y = head.y-dy;
+        
+        */
         // We need to do a diagonal move of 2 to get closer
         let dx = if knots[0].x < knots[1].x { -1 } else { 1 };
         let dy = if knots[0].y < knots[1].y { -1 } else { 1 };
