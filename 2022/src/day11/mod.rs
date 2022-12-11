@@ -2,15 +2,15 @@ use std::{str::FromStr, mem};
 
 #[derive(Debug, Clone, Copy)]
 enum Operation {
-    Add(u32),
-    Mul(u32),
+    Add(u64),
+    Mul(u64),
     Square
 }
 
 #[derive(Debug)]
 struct Monkey {
-    items: Vec<u32>,
-    test: u32,
+    items: Vec<u64>,
+    test: u64,
     operation: Operation,
     if_true: usize,
     if_false: usize,
@@ -63,15 +63,17 @@ fn parse_input(s: &str) -> Input {
     s.parse().expect("Unable to parse input")
 }
 
-fn count_activity(mut input: Input) -> usize {
+fn count_activity(mut input: Input, part1: bool) -> usize {
     let n_monkeys = input.monkeys.len();
-    for _round in 0..20 {
+    let ring = input.monkeys.iter().fold(1, |acc, m| acc * m.test);
+    let n_rounds = if part1 { 20 } else { 10000 };
+    for _round in 0..n_rounds {
         //println!("ROUND {}", _round);
         /*for index in 0..n_monkeys {
             println!("Monkey {} {:?}", index, input.monkeys[index].items);
         }*/
         for index in 0..n_monkeys {
-            let mut updates: Vec<Vec<u32>> = (0..n_monkeys).map(|_| vec![]).collect();
+            let mut updates: Vec<Vec<u64>> = (0..n_monkeys).map(|_| vec![]).collect();
             {
                 let cur_monkey = &mut input.monkeys[index];
                 //println!("Monkey {} {:?}", index, cur_monkey.items);
@@ -88,7 +90,7 @@ fn count_activity(mut input: Input) -> usize {
                         Operation::Square => item * item,
                     };
                     //println!("  post-op {}", post_op);
-                    let post_relax = post_op / 3;
+                    let post_relax = if part1 {post_op / 3} else { post_op % ring };
                     //println!("  post-relax {}", post_relax);
                     let destination = if post_relax % cur_monkey.test == 0 {
                         cur_monkey.if_true
@@ -114,13 +116,13 @@ fn count_activity(mut input: Input) -> usize {
 fn part1_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
 
-    let result = count_activity(input);
+    let result = count_activity(input, true);
     assert_eq!(result, 10605);
 }
 
 pub fn part1() -> usize {
     let input = parse_input(include_str!("input.txt"));
-    count_activity(input)
+    count_activity(input, true)
 }
 
 #[test]
@@ -132,15 +134,17 @@ fn part1_works() {
 fn part2_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
 
+    let result = count_activity(input, false);
+    assert_eq!(result, 2713310158);
     
 }
 
-pub fn part2() -> u32 {
+pub fn part2() -> usize {
     let input = parse_input(include_str!("input.txt"));
-    0
+    count_activity(input, false)
 }
 
 #[test]
 fn part2_works() {
-    assert_eq!(part2(), 0)
+    assert_eq!(part2(), 19754471646)
 }
