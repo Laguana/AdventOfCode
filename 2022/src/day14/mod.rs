@@ -144,6 +144,31 @@ impl Grid {
 
         grains
     }
+
+    pub fn count_sand2(&mut self) -> usize {
+        let mut result = 0;
+        let mut fringe = vec![(500,0)];
+        let (_, bottom) = self.bottom_right;
+        loop {
+            let p = match fringe.pop() {
+                Some(p) => p,
+                None => return result
+            };
+            if self.grid.contains_key(&p) {
+                continue;
+            }
+            result += 1;
+            self.grid.insert(p, Cell::Sand);
+            let (px, py) = p;
+            if py >= bottom+1 {
+                continue;
+            }
+
+            fringe.push((px-1, py+1));
+            fringe.push((px, py+1));
+            fringe.push((px+1, py+1));
+        }
+    }
 }
 
 
@@ -176,7 +201,7 @@ fn part2_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
     let mut grid = Grid::new(&input);
     
-    let result = grid.count_sand(true);
+    let result = grid.count_sand2();
     assert_eq!(result, 93);
     
 }
@@ -185,7 +210,7 @@ pub fn part2() -> usize {
     let input = parse_input(include_str!("input.txt"));
     let mut grid = Grid::new(&input);
 
-    grid.count_sand(true)
+    grid.count_sand2()
 }
 
 #[test]
