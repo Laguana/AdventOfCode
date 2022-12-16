@@ -1,4 +1,4 @@
-use std::{str::FromStr, collections::HashSet};
+use std::{str::FromStr, collections::HashSet, mem};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Coordinate {
@@ -97,16 +97,123 @@ fn count_covered_at_row(input: &Input, row: i64) -> usize {
     covered.len()
 }
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+struct Interval {
+    low: i64,
+    high: i64
+}
+
+impl Interval {
+    fn new(low: i64, high: i64) -> Interval {
+        assert!(low <= high);
+        Interval {low, high}
+    }
+
+    pub fn intersects(&self, other: &Interval) -> bool {
+        !(self.low > other.high || self.high < other.low)
+    }
+
+    pub fn add(&mut self, other: &Interval) -> bool {
+        if !self.intersects(other) {
+            return false;
+        }
+
+        self.low = self.low.min(other.low);
+        self.high = self.high.max(other.high);
+
+        return true;
+    }
+
+    pub fn span(&self) -> i64 {
+        self.high-self.low + 1
+    }
+}
+
+#[derive(Debug)]
+struct Intervals {
+    collection: Vec<Interval>
+}
+
+impl Intervals {
+    pub fn new() -> Intervals {
+        Intervals { collection: vec![]}
+    }
+
+    pub fn add(&mut self, i: Interval) {
+        let mut temp: Vec<Interval> = vec![];
+        mem::swap(&mut temp, &mut self.collection);
+        let (combine, keep): (Vec<_>, Vec<_>) = temp.into_iter()
+            .partition(|e| e.intersects(&i));
+        self.collection = keep;
+        self.collection.push(combine.into_iter()
+            .fold(i, |mut acc, e| {
+                assert!(acc.add(&e));
+                acc
+            }));
+    }
+
+    pub fn span(&self) -> i64 {
+        let mut result = 0i64;
+        for span in &self.collection {
+            result += span.span();
+        }
+        result
+    }
+}
+
+fn count_covered_at_row_interval(input: &Input, row: i64) -> i64 {
+    let mut coverage = Intervals::new();
+
+    for sensor in &input.sensors {
+        //println!("{:?} {:?}", sensor, coverage);
+        let sensor_range = sensor.range;
+        let row_distance = (sensor.sensor.y - row).abs();
+        if sensor_range < row_distance {
+            continue;
+        }
+
+        let remaining = sensor_range - row_distance;
+
+        // sensor excludes at least one location, unless it is a beacon
+        if sensor.beacon.y == row {
+            // something on the row needs to be omitted from the span here
+            if remaining == 0 {
+                // actually we only see the beacon, ditch it;
+                continue;
+            }
+            let low = sensor.sensor.x - remaining;
+            let high = sensor.sensor.x + remaining;
+            //println!("- {}-{} {}?", low, high, sensor.beacon.x);
+            if sensor.beacon.x == low {
+                coverage.add(Interval::new(low+1, high));
+            } else if sensor.beacon.x == high {
+                coverage.add(Interval::new(low, high-1));
+            } else {
+                coverage.add(Interval::new(low, sensor.beacon.x-1));
+                coverage.add(Interval::new(sensor.beacon.x+1, high));
+            }
+        } else {
+            // just the one span necessary
+            let new_span = Interval::new(sensor.sensor.x - remaining, sensor.sensor.x + remaining);
+            // combine it with what we have already
+            coverage.add(new_span);
+        }
+    }
+
+    //println!("{:?}", coverage);
+    coverage.span()
+}
+
 #[test]
 fn part1_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
-    let result = count_covered_at_row(&input, 10);
+    let result = count_covered_at_row_interval(&input, 10);
     assert_eq!(result, 26)
 }
 
-pub fn part1() -> usize {
+pub fn part1() -> i64 {
     let input = parse_input(include_str!("input.txt"));
-    count_covered_at_row(&input, 2000000)
+    count_covered_at_row_interval(&input, 2000000)
 }
 
 #[test]
