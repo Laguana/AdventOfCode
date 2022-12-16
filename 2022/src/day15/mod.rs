@@ -60,7 +60,7 @@ fn parse_input(s: &str) -> Input {
     s.parse().expect("Unable to parse input")
 }
 
-fn count_covered_at_row(input: &Input, row: i64) -> usize {
+fn _count_covered_at_row(input: &Input, row: i64) -> usize {
     let mut covered = HashSet::new();
 
     for sensor in &input.sensors {

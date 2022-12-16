@@ -1,4 +1,4 @@
-use std::{str::FromStr, collections::{HashMap, HashSet}};
+use std::{str::FromStr, collections::HashMap};
 
 #[derive(Debug, Clone)]
 struct Location {
@@ -35,6 +35,12 @@ fn parse_input(s: &str) -> Input {
     s.parse().expect("Unable to parse input")
 }
 
+#[derive(Debug, Clone)]
+struct LocationI {
+    rate: usize,
+    connections: Vec<(usize, usize)>
+}
+
 fn consolidate_graph_arc(
     graph: &mut HashMap::<usize, LocationI>,
     from: &usize,
@@ -50,13 +56,6 @@ fn consolidate_graph_arc(
         }
     }
 }
-
-#[derive(Debug, Clone)]
-struct LocationI {
-    rate: usize,
-    connections: Vec<(usize, usize)>
-}
-
 
 fn construct_graph(input: &Input) -> (usize, HashMap::<usize, LocationI>) {
     let mut name_lookup = HashMap::<String, usize>:: new();
@@ -95,73 +94,197 @@ fn construct_graph(input: &Input) -> (usize, HashMap::<usize, LocationI>) {
     (*name_lookup.get("AA").unwrap(), graph)
 }
 
-fn try_flow_recursive(graph: &HashMap::<usize, LocationI>, max_open: u64, open: u64, time: usize, location: usize) -> usize {
-    println!("{} {}, {}, {:?}", location, time, open, graph);
-    let loc = graph.get(&location).unwrap();
-    if time == 0 || open == max_open {
-        return 0;
-    }
-    let open_mask = 1<<location;
-    let open_option = 
-        if loc.rate != 0 && open & open_mask == 0 {
-            // try opening it
-            let time = time-1;
-            (time * loc.rate) + try_flow_recursive(graph, max_open, open | open_mask, time, location)
-        } else {
-            0
-        };
-    let wander = loc.connections.iter().filter_map(|(d, i)| {
-        if *d >= time {
-            return None;
+fn floyd_warshal(graph: &HashMap<usize, LocationI>) -> HashMap<(usize, usize), usize> {
+    let mut result = HashMap::new();
+    for (k,v) in graph.iter() {
+        for (d, t) in &v.connections {
+            result.insert((*k, *t), *d);
         }
-        Some (try_flow_recursive(graph, max_open, open, time-d, *i))
-    }).max().unwrap_or_default();
-    wander.max(open_option)
+    }
+    for &k in graph.keys() {
+        for &i in graph.keys() {
+            for &j in graph.keys() {
+                if i == j {
+                    continue;
+                }
+                let new_d = {
+                    let ik = result.get(&(i,k));
+                    let kj = result.get(&(k,j));
+                    let ij = result.get(&(i,j));
+                    match (ik, kj) {
+                        (None, _) => None,
+                        (_, None) => None,
+                        (Some(d1), Some(d2)) => {
+                            let dc = *d1 + *d2;
+                            match ij {
+                                None => Some(dc),
+                                Some(d) => {
+                                    if dc < *d {
+                                        Some(dc)
+                                    } else {
+                                        None
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                if new_d.is_some() {
+                    result.insert((i,j), new_d.unwrap());
+                }
+            }
+        }
+    }
+
+    result
 }
 
-fn maximise_flow(graph: HashMap::<usize, LocationI>, start: usize) -> usize {
-    let mut max_open = 0;
+fn maximise_flow(graph: &HashMap::<usize, LocationI>, start: usize, part2: bool) -> usize {
+    let shortest_paths = floyd_warshal(graph);
+    let mut max_open = 0u64;
     for (k,v) in graph.iter() {
         if v.rate != 0 {
             max_open |= 1<<k;
         }
     }
-    try_flow_recursive(&graph, max_open, 0, 30, start)
+    //println!("{:?}", shortest_paths);
+
+    // try each ordering
+    if part2 {
+        max_flow_rec2(graph, &shortest_paths, start, start, 0, 0, max_open, 26)
+    } else {
+        max_flow_rec2(graph, &shortest_paths, start, start, 30, 0, max_open, 30)
+        //max_flow_rec(graph, &shortest_paths, start, max_open, 30)
+    }
+}
+
+fn _max_flow_rec(
+    graph: &HashMap<usize, LocationI>,
+    shortest_paths: &HashMap<(usize, usize), usize>,
+    loc: usize,
+    open: u64,
+    time: usize) -> usize {
+    if time <= 1 {
+        return 0;
+    }
+    let loc_mask = 1<<loc;
+    assert_eq!(open & loc_mask, 0);
+    (0..63).into_iter()
+        .filter(|&i| 
+                i != loc 
+                && (open & (1<<i)) != 0 
+                && *shortest_paths.get(&(loc, i)).unwrap() < time)
+        .map(|dest| {
+            // Go from loc to dest and turn it on
+            let d = shortest_paths.get(&(loc, dest)).unwrap();
+            let new_open = open & !(1<<dest);
+            let new_time = time - d - 1;
+            let action_score = graph.get(&dest).unwrap().rate * new_time;
+            action_score + _max_flow_rec(graph, shortest_paths, dest, new_open, new_time)
+        }).max().unwrap_or_default()
+}
+
+fn max_flow_rec2(
+    graph: &HashMap<usize, LocationI>,
+    shortest_paths: &HashMap<(usize, usize), usize>,
+    loc: usize,
+    loc2: usize,
+    delay: usize,
+    delay2: usize,
+    open: u64,
+    time: usize) -> usize {
+    if time <= 1 {
+        return 0;
+    }
+    //println!("{}:{} {}:{} {}", loc, delay, loc2, delay2, time);
+    match (delay, delay2) {
+        (0, t) => {
+            (0..63).into_iter()
+            .filter(|&i| 
+                    i != loc 
+                    && (open & (1<<i)) != 0 
+                    && *shortest_paths.get(&(loc, i)).unwrap() < time)
+            .map(|dest| {
+                // Go from loc to dest and turn it on
+                let d = shortest_paths.get(&(loc, dest)).unwrap();
+                let new_open = open & !(1<<dest);
+                let new_time = time - d - 1;
+                let action_score = graph.get(&dest).unwrap().rate * new_time;
+                if t == 0 {
+                    action_score + (0..63).into_iter()
+                    .filter(|&i| 
+                            i != loc2 && i != dest && i != loc
+                            && (new_open & (1<<i)) != 0
+                            && *shortest_paths.get(&(loc2, i)).unwrap() < time)
+                    .map(|dest2| {
+                        // Go from loc to dest and turn it on
+                        let d2 = shortest_paths.get(&(loc2, dest2)).unwrap();
+                        let new_open = new_open & !(1<<dest2);
+                        let new_time = time - d2 - 1;
+                        let action_score = graph.get(&dest2).unwrap().rate * new_time;
+                        let step = d.min(d2)+1;
+                        action_score + max_flow_rec2(graph, shortest_paths, dest, dest2, d+1-step, d2+1-step, new_open, time - step)
+                    }).max().unwrap_or_default()
+                } else {
+                    let step = t.min(d+1);
+                    action_score + max_flow_rec2(graph, shortest_paths, dest, loc2, d+1-step, delay2-step, new_open, time-step)
+                }
+            }).max().unwrap_or_default()
+        },
+        (t, 0) => {
+            (0..63).into_iter()
+            .filter(|&i| 
+                    i != loc2 
+                    && (open & (1<<i)) != 0 
+                    && *shortest_paths.get(&(loc2, i)).unwrap() < time)
+            .map(|dest| {
+                // Go from loc to dest and turn it on
+                let d = shortest_paths.get(&(loc2, dest)).unwrap();
+                let new_open = open & !(1<<dest);
+                let new_time = time - d - 1;
+                let action_score = graph.get(&dest).unwrap().rate * new_time;
+                let step = t.min(d+1);
+                action_score + max_flow_rec2(graph, shortest_paths, loc, dest, t-step, d+1-step, new_open, time - step)
+            }).max().unwrap_or_default()
+        },
+        _ => panic!("Nobody is ready!")
+    }
 }
 
 #[test]
 fn part1_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
     let (start, graph) = construct_graph(&input);
-    let result = maximise_flow(graph, start);
+    let result = maximise_flow(&graph, start, false);
     assert_eq!(result, 1651)
 }
 
-pub fn part1() -> u32 {
+pub fn part1() -> usize {
     let input = parse_input(include_str!("input.txt"));
-    let graph = construct_graph(&input);
-    println!("{:?}", graph);
-    0
+    let (start, graph) = construct_graph(&input);
+    maximise_flow(&graph, start, false)
 }
 
 #[test]
 fn part1_works() {
-    assert_eq!(part1(), 0)
+    assert_eq!(part1(), 1474)
 }
 
 #[test]
 fn part2_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
-
-    
+    let (start, graph) = construct_graph(&input);
+    let result = maximise_flow(&graph, start, true);
+    assert_eq!(result, 1707);
 }
 
-pub fn part2() -> u32 {
+pub fn part2() -> usize {
     let input = parse_input(include_str!("input.txt"));
-    0
+    let (start, graph) = construct_graph(&input);
+    maximise_flow(&graph, start, true)
 }
 
 #[test]
 fn part2_works() {
-    assert_eq!(part2(), 0)
+    assert_eq!(part2(), 2100)
 }
