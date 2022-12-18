@@ -67,7 +67,7 @@ fn main() {
     println!("Day16 Part 2 result: {}", day16::part2());
 
     println!("Day17 Part 1 result: {}", day17::part1());
-    // TODO :(
+    println!("Day17 Part 2 result too slow!");
     //println!("Day17 Part 2 result: {}", day17::part2());
 
     println!("Day18 Part 1 result: {}", day18::part1());

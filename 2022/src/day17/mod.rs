@@ -1,4 +1,4 @@
-use std::{str::FromStr, collections::HashSet};
+use std::{str::FromStr, collections::{HashSet, HashMap}};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Direction {
@@ -26,7 +26,7 @@ fn parse_input(s: &str) -> Input {
     s.parse().expect("Unable to parse input")
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum RockType {
     Flat,
     Plus,
@@ -81,6 +81,7 @@ impl RockType {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
 struct Rock {
     pos: Coordinate,
     kind: RockType,
@@ -145,12 +146,25 @@ fn simulate(input: &Input, steps: usize) -> i64 {
     let mut field = Field{grid: HashSet::new()};
     let mut next_rock = Rock::initial();
     let mut tallest = 0;
-    for _rock in 1..=steps {
 
-        //println!("Rock {}", _rock);
+    let mut jet_idx = 0;
+    let jet_len = input.jets.len();
+
+    let cycle_find = true;
+
+    let mut history = vec![];
+    let mut history_idx: HashMap<(u128, usize, RockType), usize> = HashMap::new();
+    
+
+
+    for rock in 1..=steps {
+
+        //println!("Rock {}", rock);
         //field.render(tallest);
         while !next_rock.step(*jet_iter.next().unwrap(), &field) {
             //println!(" {:?}", next_rock.tiles());
+            jet_idx += 1;
+            jet_idx %= jet_len;
         }
         // Rock has landed; add it to the field
         let new_tiles = next_rock.tiles();
@@ -158,6 +172,32 @@ fn simulate(input: &Input, steps: usize) -> i64 {
         //println!(" Landed {:?}", new_tiles);
 
         field.grid.extend(new_tiles);
+
+        if cycle_find {
+            let top_bits = (tallest-17..=tallest)
+                .fold(0, |acc, y| acc<<7 | (0..7).fold(0, 
+                    |acc, x| acc<<1 | if field.grid.contains(&Coordinate::new(x, y)) {1} else {0}));
+            let history_key = (top_bits, jet_idx, next_rock.kind);
+            match history_idx.insert(history_key, history.len()) {
+                Some(prev_idx) => {
+                    let (cycle_start, height_start) = history[prev_idx];
+                    println!("Found cycle! {} {} -> {} {}", cycle_start, height_start, rock, tallest);
+                    //field._render(tallest);
+                    let cycle_length = rock-cycle_start;
+                    let height_delta = tallest - height_start;
+                    let cycle_repeat = (steps-rock)/cycle_length;
+                    let remainder = (steps-rock)%cycle_length;
+                    let before_remainder = tallest + (cycle_repeat as i64) * height_delta;
+                    let (_, height_remainder) = history[prev_idx + remainder];
+                    let height_remainder = height_remainder - height_start;
+                    println!("{} {}, {} {}, {} {}", cycle_length, height_delta, cycle_repeat, remainder, before_remainder, height_remainder);
+                    return before_remainder + height_remainder+1;
+                },
+                None => {
+                    history.push((rock, tallest));
+                },
+            }
+        }
 
         next_rock = Rock::next(&next_rock, tallest)
     }
@@ -185,16 +225,17 @@ fn part1_works() {
 fn part2_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
     // We need something O(f(input)) rather than O(1_000_000_000_000)...
-    simulate(&input, 20);
+    let result = simulate(&input, 1_000_000_000_000);
+    assert_eq!(result, 1514285714288);
     
 }
 
-pub fn part2() -> u32 {
-    let _input = parse_input(include_str!("input.txt"));
-    0
+pub fn _part2() -> i64 {
+    let input = parse_input(include_str!("input.txt"));
+    simulate(&input, 1_000_000_000_000)
 }
 
-#[test]
-fn part2_works() {
-    assert_eq!(part2(), 0)
+//#[test]
+fn _part2_works() {
+    assert_eq!(_part2(), 1500874635587)
 }
