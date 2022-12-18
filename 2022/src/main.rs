@@ -15,6 +15,7 @@ mod day14;
 mod day15;
 mod day16;
 mod day17;
+mod day18;
 
 fn main() {
     println!("Day1 Part 1 result: {}", day1::part1());
@@ -67,5 +68,9 @@ fn main() {
     //println!("Day16 Part 2 result: {}", day16::part2());
 
     println!("Day17 Part 1 result: {}", day17::part1());
-    println!("Day17 Part 2 result: {}", day17::part2());
+    // TODO :(
+    //println!("Day17 Part 2 result: {}", day17::part2());
+
+    println!("Day18 Part 1 result: {}", day18::part1());
+    println!("Day18 Part 2 result: {}", day18::part2());
 }
