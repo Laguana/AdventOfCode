@@ -187,12 +187,23 @@ fn _max_flow_rec(
 fn upper_bound(
     graph: &HashMap<usize, LocationI>,
     open: u64,
-    time: usize) -> usize {
-    // Suppose we magically opened all the things right now
+    time: usize,
+    shortest_paths: &HashMap<(usize, usize), usize>,
+    loc: usize,
+    loc2: usize) -> usize {
+    // Suppose we magically opened all the things
+    // by splitting up and running to each in parallel
     (0..63).into_iter()
         .filter(|&i| (open & (1<<i)) != 0)
-        .map(|i| {
-            graph.get(&i).unwrap().rate * (time-1)
+        .filter_map(|i| {
+            let travel1 = shortest_paths.get(&(loc, i)).unwrap();
+            let travel2 = shortest_paths.get(&(loc2, i)).unwrap();
+            let delay = travel1.min(travel2);
+            if *delay >= time {
+                None
+            } else {
+                Some(graph.get(&i).unwrap().rate * (time-delay))
+            }
         }).sum()
 }
 
@@ -210,7 +221,7 @@ fn max_flow_rec2(
     if time <= 1 {
         return score;
     }
-    if score + upper_bound(graph, open, time) < best_so_far {
+    if score + upper_bound(graph, open, time, shortest_paths, loc, loc2) < best_so_far {
         //println!("Can't beat {}: {},{},{}", best_so_far, score, open, time);
         return best_so_far;
     }

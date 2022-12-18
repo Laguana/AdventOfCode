@@ -91,7 +91,7 @@ struct Field {
 }
 
 impl Field {
-    pub fn render(&self, top: i64) {
+    pub fn _render(&self, top: i64) {
         for y in (0..=top).rev() {
             println!("|{}|",String::from_iter((0..7).map(|x| if self.grid.contains(&Coordinate { x, y}) {'#'} else {'.'})));
         }
@@ -147,8 +147,8 @@ fn simulate(input: &Input, steps: usize) -> i64 {
     let mut tallest = 0;
     for _rock in 1..=steps {
 
-        println!("Rock {}", _rock);
-        field.render(tallest);
+        //println!("Rock {}", _rock);
+        //field.render(tallest);
         while !next_rock.step(*jet_iter.next().unwrap(), &field) {
             //println!(" {:?}", next_rock.tiles());
         }
