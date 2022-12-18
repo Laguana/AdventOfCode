@@ -151,9 +151,9 @@ fn maximise_flow(graph: &HashMap::<usize, LocationI>, start: usize, part2: bool)
 
     // try each ordering
     if part2 {
-        max_flow_rec2(graph, &shortest_paths, start, start, 0, 0, max_open, 26)
+        max_flow_rec2(graph, &shortest_paths, start, start, 0, 0, max_open, 26 ,0, 0)
     } else {
-        max_flow_rec2(graph, &shortest_paths, start, start, 30, 0, max_open, 30)
+        max_flow_rec2(graph, &shortest_paths, start, start, 30, 0, max_open, 30, 0, 0)
         //max_flow_rec(graph, &shortest_paths, start, max_open, 30)
     }
 }
@@ -184,6 +184,18 @@ fn _max_flow_rec(
         }).max().unwrap_or_default()
 }
 
+fn upper_bound(
+    graph: &HashMap<usize, LocationI>,
+    open: u64,
+    time: usize) -> usize {
+    // Suppose we magically opened all the things right now
+    (0..63).into_iter()
+        .filter(|&i| (open & (1<<i)) != 0)
+        .map(|i| {
+            graph.get(&i).unwrap().rate * (time-1)
+        }).sum()
+}
+
 fn max_flow_rec2(
     graph: &HashMap<usize, LocationI>,
     shortest_paths: &HashMap<(usize, usize), usize>,
@@ -192,60 +204,74 @@ fn max_flow_rec2(
     delay: usize,
     delay2: usize,
     open: u64,
-    time: usize) -> usize {
+    time: usize,
+    best_so_far: usize,
+    score: usize ) -> usize {
     if time <= 1 {
-        return 0;
+        return score;
     }
-    //println!("{}:{} {}:{} {}", loc, delay, loc2, delay2, time);
+    if score + upper_bound(graph, open, time) < best_so_far {
+        //println!("Can't beat {}: {},{},{}", best_so_far, score, open, time);
+        return best_so_far;
+    }
     match (delay, delay2) {
         (0, t) => {
-            (0..63).into_iter()
-            .filter(|&i| 
-                    i != loc 
-                    && (open & (1<<i)) != 0 
-                    && *shortest_paths.get(&(loc, i)).unwrap() < time)
-            .map(|dest| {
+            let mut best_so_far = best_so_far.max(score);
+            for dest in 0..63 {
+                if dest == loc 
+                    || (open & (1<<dest)) == 0 
+                    || *shortest_paths.get(&(loc, dest)).unwrap() >= time {
+                    continue;
+                }
+
                 // Go from loc to dest and turn it on
                 let d = shortest_paths.get(&(loc, dest)).unwrap();
                 let new_open = open & !(1<<dest);
                 let new_time = time - d - 1;
                 let action_score = graph.get(&dest).unwrap().rate * new_time;
                 if t == 0 {
-                    action_score + (0..63).into_iter()
-                    .filter(|&i| 
-                            i != loc2 && i != dest && i != loc
-                            && (new_open & (1<<i)) != 0
-                            && *shortest_paths.get(&(loc2, i)).unwrap() < time)
-                    .map(|dest2| {
-                        // Go from loc to dest and turn it on
+                    for dest2 in 0..63 {
+                        if dest2 == loc2 || dest2 == dest || dest2 == loc
+                            || (new_open & (1<<dest2)) == 0
+                            || *shortest_paths.get(&(loc2, dest2)).unwrap() >= time {
+                            continue;
+                        }
+                        // Go from loc2 to dest2 and turn it on
                         let d2 = shortest_paths.get(&(loc2, dest2)).unwrap();
                         let new_open = new_open & !(1<<dest2);
                         let new_time = time - d2 - 1;
-                        let action_score = graph.get(&dest2).unwrap().rate * new_time;
+                        let action_score2 = graph.get(&dest2).unwrap().rate * new_time;
                         let step = d.min(d2)+1;
-                        action_score + max_flow_rec2(graph, shortest_paths, dest, dest2, d+1-step, d2+1-step, new_open, time - step)
-                    }).max().unwrap_or_default()
+                        let recursive_result = max_flow_rec2(graph, shortest_paths, dest, dest2, d+1-step, d2+1-step, new_open, time - step, best_so_far, action_score + action_score2 + score);
+                        best_so_far = best_so_far.max(recursive_result);
+                    }
                 } else {
                     let step = t.min(d+1);
-                    action_score + max_flow_rec2(graph, shortest_paths, dest, loc2, d+1-step, delay2-step, new_open, time-step)
+                    let recursive_result = max_flow_rec2(graph, shortest_paths, dest, loc2, d+1-step, delay2-step, new_open, time-step, best_so_far, action_score + score);
+                    best_so_far = best_so_far.max(recursive_result);
                 }
-            }).max().unwrap_or_default()
+            };
+            best_so_far
         },
         (t, 0) => {
-            (0..63).into_iter()
-            .filter(|&i| 
-                    i != loc2 
-                    && (open & (1<<i)) != 0 
-                    && *shortest_paths.get(&(loc2, i)).unwrap() < time)
-            .map(|dest| {
+            let mut best_so_far = best_so_far.max(score);
+            for dest in 0..63 {
+                if dest == loc2 
+                    || (open & (1<<dest)) == 0 
+                    || *shortest_paths.get(&(loc2, dest)).unwrap() >= time {
+                    continue;
+                }
+
                 // Go from loc to dest and turn it on
                 let d = shortest_paths.get(&(loc2, dest)).unwrap();
                 let new_open = open & !(1<<dest);
                 let new_time = time - d - 1;
                 let action_score = graph.get(&dest).unwrap().rate * new_time;
                 let step = t.min(d+1);
-                action_score + max_flow_rec2(graph, shortest_paths, loc, dest, t-step, d+1-step, new_open, time - step)
-            }).max().unwrap_or_default()
+                let recursive_result = max_flow_rec2(graph, shortest_paths, loc, dest, t-step, d+1-step, new_open, time - step, best_so_far, action_score + score);
+                best_so_far = best_so_far.max(recursive_result);
+            }
+            best_so_far
         },
         _ => panic!("Nobody is ready!")
     }
