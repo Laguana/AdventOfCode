@@ -30,7 +30,7 @@ struct State {
 }
 
 impl State {
-    pub fn new(input: &Input) -> State {
+    pub fn new(input: &Input, part2: bool) -> State {
         // Store what index each initial element mapped to
         let mut indexes: HashMap<usize, usize> = HashMap::new();
         let mut rev_indexes: HashMap<usize, usize> = HashMap::new();
@@ -42,7 +42,12 @@ impl State {
                 zero_idx = idx;
             }
         });
-        State {indexes, rev_indexes, zero_idx, list: input.numbers.clone()}
+        let list = if part2 {
+            input.numbers.iter().map(|v| v * DECRYPTION_KEY).collect()
+        } else {
+            input.numbers.clone()
+        };
+        State {indexes, rev_indexes, zero_idx, list}
     }
 }
 
@@ -64,7 +69,7 @@ impl State {
 // is a little weird? I.e. moving from i to i+v goes between i+v and (i+v-1)
 
 
-fn mix(input: &Input, state: &mut State) {
+fn mix(input: &Input, state: &mut State, part2: bool) {
     
     let mut result = state.list.clone();
     let size = input.numbers.len();
@@ -72,9 +77,19 @@ fn mix(input: &Input, state: &mut State) {
         if v == 0 {
             continue;
         }
+        let v = if part2 {
+            v * DECRYPTION_KEY
+        } else {
+            v
+        };
         let current_index = *state.indexes.get(&idx).unwrap();
         let new_index = {
-            let candidate_index = (((2*(size-1) + current_index) as i64 + v) as usize) % (size-1);
+            let smaller_v = if v < 0 { 
+                (size-1) - ((-v) as usize) % (size-1)
+            } else {
+                (v as usize) % (size-1)
+            };
+            let candidate_index = (current_index + smaller_v) % (size-1);
             if candidate_index == 0 {
                 size-1
             } else {
@@ -115,15 +130,15 @@ fn mix(input: &Input, state: &mut State) {
     let zero_end_index = *state.indexes.get(&state.zero_idx).unwrap();
     assert_eq!(result[zero_end_index], 0);
 
-    state.zero_idx = zero_end_index;
     state.list = result;
 }
 
-pub fn score(list: Vec<i64>, zero: usize) -> i64 {
-    let len = list.len();
-    let v1000 = list[(zero + 1000) % len];
-    let v2000 = list[(zero + 2000) % len];
-    let v3000 = list[(zero + 3000) % len];
+fn score(state: &State) -> i64 {
+    let len = state.list.len();
+    let zero = state.indexes.get(&state.zero_idx).unwrap();
+    let v1000 = state.list[(zero + 1000) % len];
+    let v2000 = state.list[(zero + 2000) % len];
+    let v3000 = state.list[(zero + 3000) % len];
     //println!("{:?}@{}", list, zero);
     //println!("{},{},{}", v1000, v2000, v3000);
     v1000 + v2000 + v3000
@@ -132,17 +147,17 @@ pub fn score(list: Vec<i64>, zero: usize) -> i64 {
 #[test]
 fn part1_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
-    let mut state = State::new(&input);
-    mix(&input, &mut state);
-    let result = score(state.list, state.zero_idx);
+    let mut state = State::new(&input, false);
+    mix(&input, &mut state, false);
+    let result = score(&state);
     assert_eq!(result, 3);
 }
 
 pub fn part1() -> i64 {
     let input = parse_input(include_str!("input.txt"));
-    let mut state = State::new(&input);
-    mix(&input, &mut state);
-    score(state.list, state.zero_idx)
+    let mut state = State::new(&input, false);
+    mix(&input, &mut state, false);
+    score(&state)
 }
 
 #[test]
@@ -153,16 +168,29 @@ fn part1_works() {
 #[test]
 fn part2_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
-
+    let mut state = State::new(&input, true);
+    //println!("{:?}", state.list);
+    for _ in 0..10 {
+        mix(&input, &mut state, true);
+        //println!("{:?}", state.list);
+    }
+    let result = score(&state);
+    assert_eq!(result, 1623178306);
     
 }
 
-pub fn part2() -> u32 {
+pub fn part2() -> i64 {
     let input = parse_input(include_str!("input.txt"));
-    0
+    let mut state = State::new(&input, true);
+    //println!("{:?}", state.list);
+    for _ in 0..10 {
+        mix(&input, &mut state, true);
+        //println!("{:?}", state.list);
+    }
+    score(&state)
 }
 
 #[test]
 fn part2_works() {
-    assert_eq!(part2(), 0)
+    assert_eq!(part2(), 4789999181006)
 }
