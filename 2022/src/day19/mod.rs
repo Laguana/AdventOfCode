@@ -45,6 +45,7 @@ fn parse_input(s: &str) -> Input {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 struct State {
+    time: u64,
     ore: u64,
     ore_robots: u64,
     clay: u64,
@@ -65,8 +66,8 @@ impl Ord for State {
 }
 
 impl State {
-    pub fn new() -> State {
-        State { ore: 0, ore_robots: 1, clay: 0, clay_robots: 0, obsidian: 0, obsidian_robots: 0, geodes: 0, geode_robots: 0}
+    pub fn new(time: u64) -> State {
+        State { time, ore: 0, ore_robots: 1, clay: 0, clay_robots: 0, obsidian: 0, obsidian_robots: 0, geodes: 0, geode_robots: 0}
     }
 
     pub fn tick(&mut self) {
@@ -74,105 +75,158 @@ impl State {
         self.clay     += self.clay_robots;
         self.obsidian += self.obsidian_robots;
         self.geodes   += self.geode_robots;
+        self.time -= 1;
     }
+
+    pub fn afford_geode(&self, blueprint: &Blueprint) -> bool {
+        self.ore >= blueprint.ore_per_geode && self.obsidian >= blueprint.obsidian_per_geode
+    }
+
+    pub fn afford_obsidian(&self, blueprint: &Blueprint) -> bool {
+        self.ore >= blueprint.ore_per_obsidian && self.clay >= blueprint.clay_per_obsidian
+    }
+    pub fn enough_obsidian(&self, blueprint: &Blueprint) -> bool {
+        if self.obsidian_robots >= blueprint.obsidian_per_geode {
+            return true;
+        }
+        let defecit = blueprint.obsidian_per_geode - self.obsidian_robots;
+        if defecit * self.time <= self.obsidian {
+            return true;
+        }
+        return false;
+    }
+
+    pub fn afford_clay(&self, blueprint: &Blueprint) -> bool {
+        self.ore >= blueprint.ore_per_clay
+    }
+
+    pub fn enough_clay(&self, blueprint: &Blueprint) -> bool {
+        if self.clay_robots >= blueprint.clay_per_obsidian {
+            return true;
+        }
+        let defecit = blueprint.clay_per_obsidian - self.clay_robots;
+        if defecit * self.time <= self.clay {
+            return true;
+        }
+        if self.enough_obsidian(blueprint) {
+            return true;
+        }
+
+        return false;
+    }
+
+    pub fn afford_ore(&self, blueprint: &Blueprint) -> bool {
+        self.ore >= blueprint.ore_per_ore
+    }
+    pub fn enough_ore(&self, blueprint: &Blueprint) -> bool {
+        let max_ore_needed = 
+            blueprint.ore_per_clay
+            .max(blueprint.ore_per_geode)
+            .max(blueprint.ore_per_obsidian);
+        if self.ore_robots >= max_ore_needed {
+            return true;
+        }
+        let defecit = max_ore_needed - self.ore_robots;
+        if defecit * self.time <= self.ore {
+            return true;
+        }
+        return false;
+    }
+
+
 }
 
-fn can_make_geode_bot(blueprint: &Blueprint, state: &State, time: u64) -> bool {
-    // Some very broad heuristics; each turn we get a robot and we don't spend anything?
-    // n + (n+1) + (n+2) + ... + (n+k) for time k
-    // (n+k+1)(n+k)/2 - n(n+1)/2
-    let obsidian_bots = state.obsidian_robots;
-    let max_obsidian_output = 
-        (obsidian_bots + time + 1) * (obsidian_bots + time)/2
-        - obsidian_bots * (obsidian_bots+1)/2;
-    let max_obsidian = state.obsidian + max_obsidian_output;
-    
-    let ore_bots = state.ore_robots;
-    let max_ore_output =
-        (ore_bots + time + 1) * (ore_bots + time)/2
-        - ore_bots * (ore_bots+1)/2;
-    let max_ore = state.ore + max_ore_output;
-
-    max_obsidian >= blueprint.obsidian_per_geode && max_ore >= blueprint.ore_per_geode
+#[derive(Debug)]
+enum BotType {
+    Ore,
+    Clay,
+    Obsidian,
+    Geode
 }
 
-fn evaluate_blueprint_rec(blueprint: &Blueprint, state: State, time: u64) -> State {
-    if time == 0 {
+
+fn evaluate_blueprint_rec(blueprint: &Blueprint, state: State) -> State {
+    if state.time == 0 {
         return state;
     }
-    if !can_make_geode_bot(blueprint, &state, time) {
-        let mut final_state = state;
-        final_state.geodes += time * state.geode_robots;
-        return final_state;
-    }
+    let mut wait_it_out = state.clone();
+    wait_it_out.geodes += state.time * state.geode_robots;
 
-    //println!("{}:{:?}", time, state);
-    let mut max = state;
-    if state.ore >= blueprint.ore_per_geode && state.obsidian >= blueprint.obsidian_per_geode {
-        let mut candidate_state = state.clone();
-        candidate_state.ore -= blueprint.ore_per_geode;
-        candidate_state.obsidian -= blueprint.obsidian_per_geode;
-        candidate_state.tick();
-        candidate_state.geode_robots += 1;
-        // If you can make a geode bot, probably do it.
-        // Except this can bite you in the long run
-        max = max.max(evaluate_blueprint_rec(blueprint, candidate_state, time-1));
-    }
-
-    if state.ore >= blueprint.ore_per_obsidian && state.clay >= blueprint.clay_per_obsidian
-            && state.obsidian_robots < blueprint.obsidian_per_geode {
-        let mut candidate_state = state.clone();
-        candidate_state.ore -= blueprint.ore_per_obsidian;
-        candidate_state.clay -= blueprint.clay_per_obsidian;
-        candidate_state.tick();
-        candidate_state.obsidian_robots += 1;
-        max = max.max(evaluate_blueprint_rec(blueprint, candidate_state, time-1));
-        // Get started on obsidian asap
-        if state.obsidian_robots < blueprint.obsidian_per_geode/2 {
-            return max;
+    [BotType::Ore, BotType::Clay, BotType::Obsidian, BotType::Geode].into_iter().filter_map(|bt| {
+        match bt {
+            BotType::Ore => {
+                if state.enough_ore(blueprint) {
+                    return None
+                }
+                let mut candidate_state = state.clone();
+                while candidate_state.time > 0 && !candidate_state.afford_ore(blueprint) {
+                    candidate_state.tick()
+                }
+                if candidate_state.time == 0 || !candidate_state.afford_ore(blueprint) {
+                    return None;
+                }
+                candidate_state.ore -= blueprint.ore_per_ore;
+                candidate_state.tick();
+                candidate_state.ore_robots += 1;
+                Some(evaluate_blueprint_rec(blueprint, candidate_state))
+            },
+            BotType::Clay => {
+                if state.enough_clay(blueprint) {
+                    return None
+                }
+                let mut candidate_state = state.clone();
+                while candidate_state.time > 0 && !candidate_state.afford_clay(blueprint) {
+                    candidate_state.tick()
+                }
+                if candidate_state.time == 0 || !candidate_state.afford_clay(blueprint) {
+                    return None;
+                }
+                candidate_state.ore -= blueprint.ore_per_clay;
+                candidate_state.tick();
+                candidate_state.clay_robots += 1;
+                Some(evaluate_blueprint_rec(blueprint, candidate_state))
+            },
+            BotType::Obsidian => {
+                if state.enough_obsidian(blueprint) {
+                    return None
+                }
+                let mut candidate_state = state.clone();
+                while candidate_state.time > 0 && !candidate_state.afford_obsidian(blueprint) {
+                    candidate_state.tick()
+                }
+                if candidate_state.time == 0 || !candidate_state.afford_obsidian(blueprint) {
+                    return None;
+                }
+                candidate_state.ore -= blueprint.ore_per_obsidian;
+                candidate_state.clay -= blueprint.clay_per_obsidian;
+                candidate_state.tick();
+                candidate_state.obsidian_robots += 1;
+                Some(evaluate_blueprint_rec(blueprint, candidate_state))
+            },
+            BotType::Geode => {
+                let mut candidate_state = state.clone();
+                while candidate_state.time > 0 && !candidate_state.afford_geode(blueprint) {
+                    candidate_state.tick()
+                }
+                if candidate_state.time == 0 || !candidate_state.afford_geode(blueprint) {
+                    return None;
+                }
+                candidate_state.ore -= blueprint.ore_per_geode;
+                candidate_state.obsidian -= blueprint.obsidian_per_geode;
+                candidate_state.tick();
+                candidate_state.geode_robots += 1;
+                Some(evaluate_blueprint_rec(blueprint, candidate_state))
+            },
         }
-    }
+    }).max().unwrap_or(wait_it_out).max(wait_it_out)
 
-    if state.ore >= blueprint.ore_per_clay && state.clay_robots < blueprint.clay_per_obsidian {
-        // Don't make more clay bots if we have enough ish
-        let mut candidate_state = state.clone();
-        candidate_state.ore -= blueprint.ore_per_clay;
-        candidate_state.tick();
-        candidate_state.clay_robots += 1;
-        max = max.max(evaluate_blueprint_rec(blueprint, candidate_state, time-1));
-        /*
-        // We may actually need to hold off on getting clay 
-        if state.clay_robots == 0 {
-            return max;
-        }
-        */
-    }
-
-    let max_ore_needed = 
-        blueprint.ore_per_clay
-        .max(blueprint.ore_per_geode)
-        .max(blueprint.ore_per_obsidian);
-    if state.ore >= blueprint.ore_per_ore && state.ore_robots < max_ore_needed-1 {
-        let mut candidate_state = state.clone();
-        candidate_state.ore -= blueprint.ore_per_ore;
-        candidate_state.tick();
-        candidate_state.ore_robots += 1;
-        max = max.max(evaluate_blueprint_rec(blueprint, candidate_state, time-1));
-    }
-
-    // also do nothing
-    let mut candidate_state = state;
-    candidate_state.tick();
-    max = max.max(evaluate_blueprint_rec(blueprint, candidate_state, time-1));
-
-    max
 }
 
 fn evaluate_blueprint(blueprint: &Blueprint, time: u64) -> u64 {
-    let state = State::new();
-    println!("{:?}", blueprint);
-    let final_state = evaluate_blueprint_rec(blueprint, state, time);
-    println!("{:?}", final_state);
+    let state = State::new(time);
+    //println!("{:?}", blueprint);
+    let final_state = evaluate_blueprint_rec(blueprint, state);
+    //println!("{:?}", final_state);
     final_state.geodes
 }
 
@@ -198,19 +252,18 @@ fn part1_works() {
 
 #[test]
 fn part2_sample_works() {
-    let _input = parse_input(include_str!("sample.txt"));
     let input = parse_input(include_str!("sample.txt"));
     let results: Vec<_> = input.blueprints.iter().map(|b| evaluate_blueprint(b, 32)).collect();
     assert_eq!(results[0], 56);
     assert_eq!(results[1], 62);
 }
 
-pub fn part2() -> u32 {
-    let _input = parse_input(include_str!("input.txt"));
-    0
+pub fn part2() -> u64 {
+    let input = parse_input(include_str!("input.txt"));
+    input.blueprints[..3].iter().map(|b| evaluate_blueprint(b, 32)).product()
 }
 
 #[test]
 fn part2_works() {
-    assert_eq!(part2(), 0)
+    assert_eq!(part2(), 46816)
 }
