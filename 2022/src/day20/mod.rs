@@ -46,6 +46,24 @@ impl State {
     }
 }
 
+// I'm doing something wrong here
+// This what we should do
+// I don't understand these negative moves
+//
+//  [1, -3, 2, 3, -2, 0, 4]
+//  -3 moves between -2 and 0:
+//  [1, 2, 3, -2, -3, 0, 4]
+//
+//  [1, 2, -2, -3, 0, 3, 4]
+//  -2 moves between 4 and 1:
+//  [1, 2, -3, 0, 3, 4, -2]
+//
+// I guess that the element is ~removed from the list, then re-inserted
+// and prefers inserting at the back end rather than the front
+// The net result is everything ahead moves backwards, and counting
+// is a little weird? I.e. moving from i to i+v goes between i+v and (i+v-1)
+
+
 fn mix(input: &Input, state: &mut State) {
     
     let mut result = state.list.clone();
@@ -55,13 +73,22 @@ fn mix(input: &Input, state: &mut State) {
             continue;
         }
         let current_index = *state.indexes.get(&idx).unwrap();
-        let new_index = (((2*size + current_index) as i64 + v) as usize) % size;
-        println!("{}/{},{}->{}: {:?}", idx, v, current_index, new_index, result);
-        if v > 0 {
-            // move intermediate things downwards
-            for di in 1..=v {
-                let pi = (current_index + di as usize -1) % size;
-                let i = (current_index + di as usize) % size;
+        let new_index = {
+            let candidate_index = (((2*(size-1) + current_index) as i64 + v) as usize) % (size-1);
+            if candidate_index == 0 {
+                size-1
+            } else {
+                candidate_index
+            }
+        };
+
+        //println!("{}/{},{}->{}: {:?}", idx, v, current_index, new_index, result);
+        // Everything always moves downwards
+        if new_index > current_index {
+            // [... X a b c ...]
+            // [... a b c X ...]
+            for i in current_index+1..=new_index {
+                let pi = (i + size - 1) % size;
                 //println!(" up: {}:{}={}:{}", pi, result[pi], i, result[i]);
                 result[pi] = result[i];
                 let initial_index = *state.rev_indexes.get(&i).unwrap();
@@ -69,11 +96,11 @@ fn mix(input: &Input, state: &mut State) {
                 state.rev_indexes.insert(pi, initial_index);
             }
         } else {
-            // move intermediate things upwards
-            for di in 1..=(-v) {
-                let pi = (current_index + 2*size + 1 - di as usize) % size;
-                let i = (current_index + 2*size - di as usize) % size;
-                //println!(" down: {}:{}", i, result[i]);
+            // [... a b c X ...]
+            // [... X a b c ...]
+            for i in (new_index..current_index).rev() {
+                let pi = (i + 1) % size;
+                //println!(" down: {}:{}={}:{}", pi,result[pi], i, result[i]);
                 result[pi] = result[i];
                 let initial_index = *state.rev_indexes.get(&i).unwrap();
                 state.indexes.insert(initial_index, pi);
@@ -88,6 +115,7 @@ fn mix(input: &Input, state: &mut State) {
     let zero_end_index = *state.indexes.get(&state.zero_idx).unwrap();
     assert_eq!(result[zero_end_index], 0);
 
+    state.zero_idx = zero_end_index;
     state.list = result;
 }
 
@@ -96,7 +124,8 @@ pub fn score(list: Vec<i64>, zero: usize) -> i64 {
     let v1000 = list[(zero + 1000) % len];
     let v2000 = list[(zero + 2000) % len];
     let v3000 = list[(zero + 3000) % len];
-    println!("{},{},{}", v1000, v2000, v3000);
+    //println!("{:?}@{}", list, zero);
+    //println!("{},{},{}", v1000, v2000, v3000);
     v1000 + v2000 + v3000
 }
 
@@ -107,7 +136,6 @@ fn part1_sample_works() {
     mix(&input, &mut state);
     let result = score(state.list, state.zero_idx);
     assert_eq!(result, 3);
-    assert!(false)
 }
 
 pub fn part1() -> i64 {
