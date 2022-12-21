@@ -46,12 +46,12 @@ fn parse_input(s: &str) -> Input {
     s.parse().expect("Unable to parse input")
 }
 
-fn compute_value(input: &Input, key: &str, humn_value: i64) -> i64 {
+fn compute_value(input: &Input, key: &str, humn_value: i64) -> f64 {
     if key == "humn" {
-        return humn_value;
+        return humn_value as f64;
     }
     match input.monkies.get(key) {
-        Some(Operation::Const(v)) => *v,
+        Some(Operation::Const(v)) => *v as f64,
         Some(Operation::Add(l, r)) => {
             let l = compute_value(input, l, humn_value);
             let r = compute_value(input, r, humn_value);
@@ -84,11 +84,11 @@ fn part1_sample_works() {
         _ => panic!("Invalid input")
     };
     let result = compute_value(&input, "root", humn);
-    assert_eq!(result, 152);
+    assert_eq!(result, 152.0);
     
 }
 
-pub fn part1() -> i64 {
+pub fn part1() -> f64 {
     let input = parse_input(include_str!("input.txt"));
     let humn = match input.monkies.get("humn") {
         Some(Operation::Const(v)) => *v,
@@ -99,7 +99,7 @@ pub fn part1() -> i64 {
 
 #[test]
 fn part1_works() {
-    assert_eq!(part1(), 75147370123646)
+    assert_eq!(part1(), 75147370123646.0)
 }
 
 fn get_parts(op: &Operation) -> (String, String) {
@@ -125,50 +125,30 @@ fn newton(input: &Input) -> i64 {
     let mut vnext = 10;
 
     let mut dprev = get_delta_at(vprev);
-    if dprev == 0 {
+    if dprev == 0.0 {
         return vprev;
     }
 
     loop {
 
         let dnext = get_delta_at(vnext);
-        if dnext == 0 {
-            // now minimize I guess?
-            let dx = -1;
-            loop {
-                if get_delta_at(vnext+dx) == 0 {
-                    vnext = vnext+dx;
-                } else {
-                    break;
-                }
-            }
+        if dnext == 0.0 {
             return vnext;
         }
-        if dnext == dprev {
-            vnext = (vnext-vprev)* 2 + vprev;
-            continue;
+
+        let dx = (vnext - vprev) as f64;
+        let dy = dnext - dprev;
+        let slope = dy/dx;
+
+        //println!("{}:{} {}:{} -> {}/{} ={}", vprev, dprev, vnext, dnext, dy,dx, slope);
+
+        dprev = dnext;
+        vprev = vnext;
+        vnext = (vnext as f64 - dnext/slope) as i64;
+        if vnext == vprev {
+            vnext = vnext + slope.signum() as i64;
         }
-
-        let dy = vnext-vprev;
-
-        //println!("{}:{}, {}:{} = {}", vprev, dprev, vnext, dnext, dy);
-
-        if dnext.signum() != dprev.signum() {
-            // we overshot; go in between?
-            if dy.abs() > 1 {
-                vnext = vprev + dy/2;
-            }
-        } else {
-            if dnext.abs() < dprev.abs() {
-                // right direction, keep going
-                vprev = vnext;
-                dprev = dnext;
-                vnext = vnext + 2*dy;
-            } else {
-                // wrong way go back?
-                vnext = vprev - dy;
-            }
-        }
+        
     }
 }
 
