@@ -181,7 +181,7 @@ fn simulate(input: &Input, steps: usize) -> i64 {
             match history_idx.insert(history_key, history.len()) {
                 Some(prev_idx) => {
                     let (cycle_start, height_start) = history[prev_idx];
-                    println!("Found cycle! {} {} -> {} {}", cycle_start, height_start, rock, tallest);
+                    //println!("Found cycle! {} {} -> {} {}", cycle_start, height_start, rock, tallest);
                     //field._render(tallest);
                     let cycle_length = rock-cycle_start;
                     let height_delta = tallest - height_start;
@@ -190,7 +190,7 @@ fn simulate(input: &Input, steps: usize) -> i64 {
                     let before_remainder = tallest + (cycle_repeat as i64) * height_delta;
                     let (_, height_remainder) = history[prev_idx + remainder];
                     let height_remainder = height_remainder - height_start;
-                    println!("{} {}, {} {}, {} {}", cycle_length, height_delta, cycle_repeat, remainder, before_remainder, height_remainder);
+                    //println!("{} {}, {} {}, {} {}", cycle_length, height_delta, cycle_repeat, remainder, before_remainder, height_remainder);
                     return before_remainder + height_remainder+1;
                 },
                 None => {
@@ -230,12 +230,12 @@ fn part2_sample_works() {
     
 }
 
-pub fn _part2() -> i64 {
+pub fn part2() -> i64 {
     let input = parse_input(include_str!("input.txt"));
     simulate(&input, 1_000_000_000_000)
 }
 
 //#[test]
 fn _part2_works() {
-    assert_eq!(_part2(), 1500874635587)
+    assert_eq!(part2(), 1500874635587)
 }
