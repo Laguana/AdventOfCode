@@ -51,38 +51,352 @@ struct Coordinate {
 }
 
 impl Coordinate {
-    pub fn step(&self, facing: &Facing, input: &Input, part2: bool) -> Coordinate {
+    fn wrap_part2(&self, facing: &Facing, input: &Input) -> (Coordinate, Facing) {
+        /*
+        Principals are nice, but this is messing with my head.
+
+        Sample:
+          1
+        432
+          56
+
+        1l <-> 3u
+        1r <-> 6r
+        1u <-> 4u
+
+        2r <-> 6u
+
+        3d <-> 5l
+
+        4d <-> 5d
+        4l <-> 6d
+        */
+
+        let face_idx_x = self.x / input.face_size;
+        let sub_idx_x = self.x % input.face_size;
+        let face_idx_y = self.y / input.face_size;
+        let sub_idx_y = self.y % input.face_size;
+
+        //println!("Wrapping: {},{} ~ {},{}/{},{}", self.x, self.y, face_idx_x, face_idx_y, sub_idx_x, sub_idx_y);
+
+        if input.face_size == 4 {
+            // sample
+            match (face_idx_x, face_idx_y) {
+                (2,0) => {
+                    match facing {
+                        Facing::Up => {
+                            //1u <-> 4u
+                            let x = input.face_size - (sub_idx_x+1);
+                            let y = input.face_size;
+                            return (Coordinate{x, y}, Facing::Down)
+                        },
+                        Facing::Down => panic!("Bad direction"),
+                        Facing::Left => {
+                            //1l <-> 3u
+                            let x = input.face_size + sub_idx_y;
+                            let y = input.face_size;
+                            return (Coordinate{x, y}, Facing::Down)
+                        },
+                        Facing::Right => {
+                            //1r <-> 6r
+                            let x = input.face_size * 4-1;
+                            let y = input.face_size * 3 - (sub_idx_y+1);
+                            return (Coordinate{x, y}, Facing::Left)
+                        },
+                    }
+                },
+                (0,1) => {
+                    match facing {
+                        Facing::Up => {
+                            //4u <-> 1u
+                            let x = input.face_size*3 - (sub_idx_x+1);
+                            let y = 0;
+                            return (Coordinate{x, y}, Facing::Down)
+                        },
+                        Facing::Down => {
+                            //4d <-> 5d
+                            let x = input.face_size * 3 - (sub_idx_x+1);
+                            let y = input.face_size * 3-1;
+                            return (Coordinate{x, y}, Facing::Up)
+                        },
+                        Facing::Left => {
+                            //4l <-> 6d
+                            let x = input.face_size * 4 - (sub_idx_y+1);
+                            let y = input.face_size * 3-1;
+                            return (Coordinate{x, y}, Facing::Up)
+                        },
+                        Facing::Right => panic!("Bad direction"),
+                    }
+                },
+                (1,1) => {
+                    match facing {
+                        Facing::Up => {
+                            //3u <-> 1l
+                            let x = input.face_size*2;
+                            let y = sub_idx_x;
+                            return (Coordinate{x, y}, Facing::Right)
+                        },
+                        Facing::Down => {
+                            //3d <-> 5l
+                            let x = input.face_size * 2;
+                            let y = input.face_size * 3 - (sub_idx_y+1);
+                            return (Coordinate{x, y}, Facing::Right)
+                        },
+                        Facing::Left => panic!("Bad direction"),
+                        Facing::Right => panic!("Bad direction"),
+                    }
+                },
+                (2,1) => {
+                    match facing {
+                        Facing::Up =>  panic!("Bad direction"),
+                        Facing::Down => panic!("Bad direction"),
+                        Facing::Left => panic!("Bad direction"),
+                        Facing::Right => {
+                            //2r <-> 6u
+                            let x = input.face_size * 4 - (sub_idx_y+1);
+                            let y = input.face_size * 2;
+                            return (Coordinate{x, y}, Facing::Down)
+                        },
+                    }
+                },
+                (2,2) => {
+                    match facing {
+                        Facing::Up =>  panic!("Bad direction"),
+                        Facing::Down => {
+                            //5d <-> 4d
+                            let x = input.face_size - (sub_idx_x+1);
+                            let y = input.face_size * 2-1;
+                            //println!("result: {},{}", x, y);
+                            return (Coordinate{x, y}, Facing::Up)
+                        },
+                        Facing::Left => {
+                            //5l <-> 3d
+                            let x = input.face_size * 2 - (sub_idx_y+1);
+                            let y = input.face_size * 2-1;
+                            return (Coordinate{x, y}, Facing::Up)
+                        },
+                        Facing::Right => panic!("Bad direction"),
+                    }
+                },
+                (3,2) => {
+                    match facing {
+                        Facing::Up => {
+                            //6u <-> 2r
+                            let x = input.face_size * 3 - 1;
+                            let y = input.face_size * 2-(sub_idx_x+1);
+                            return (Coordinate{x, y}, Facing::Left)
+                        },
+                        Facing::Down => {
+                            //6d <-> 4l
+                            let x = 0;
+                            let y = input.face_size * 2-(sub_idx_x+1);
+                            return (Coordinate{x, y}, Facing::Right)
+                        },
+                        Facing::Left => panic!("Bad direction"),
+                        Facing::Right => {
+                            //6r <-> 1r
+                            let x = input.face_size * 3 -1;
+                            let y = input.face_size - (sub_idx_x+1);
+                            return (Coordinate{x, y}, Facing::Left)
+                        },
+                    }
+                }
+                _ => panic!("Invalid input")
+            }
+        } else {
+            // input
+
+            /*
+            Input:
+             21
+             3
+            54
+            6
+
+            1d <-> 3r
+            1r <-> 4r
+            1u <-> 6...d?
+
+            2u <-> 6l?
+
+            5u <-> 3l
+            5l <-> 2l
+
+            6r <-> 4d
+         */
+            match (face_idx_x, face_idx_y) {
+                (1,0) => {
+                    match facing {
+                        Facing::Up => {
+                            //2u <-> 6l
+                            let x = 0;
+                            let y = input.face_size * 3 +sub_idx_x;
+                            return (Coordinate{x, y}, Facing::Right)
+                        },
+                        Facing::Down => panic!("Bad direction"),
+                        Facing::Left => {
+                            //2l <-> 5l
+                            let x = 0;
+                            let y = input.face_size * 3-(sub_idx_y+1);
+                            return (Coordinate{x, y}, Facing::Right)
+                        },
+                        Facing::Right => panic!("Bad direction"),
+                    }
+                },
+                (2,0) => {
+                    match facing {
+                        Facing::Up => {
+                            //1u <-> 6d
+                            let x = sub_idx_x;
+                            let y = input.face_size * 4-1;
+                            return (Coordinate{x, y}, Facing::Up)
+                        },
+                        Facing::Down => {
+                            //1d <-> 3r
+                            let x = input.face_size * 2-1;
+                            let y = input.face_size + sub_idx_x;
+                            return (Coordinate{x, y}, Facing::Left)
+                        },
+                        Facing::Left => panic!("Bad direction"),
+                        Facing::Right => {
+                            //1r <-> 4r
+                            let x = input.face_size * 2-1;
+                            let y = input.face_size * 3 - (sub_idx_y+1);
+                            return (Coordinate{x, y}, Facing::Left)
+                        },
+                    }
+                },
+                (1,1) => {
+                    match facing {
+                        Facing::Up => panic!("Bad direction"),
+                        Facing::Down => panic!("Bad direction"),
+                        Facing::Left => {
+                            //3l <-> 5u
+                            let x = sub_idx_y;
+                            let y = input.face_size * 2;
+                            return (Coordinate{x, y}, Facing::Down)
+                        },
+                        Facing::Right => {
+                            //3r <-> 1d
+                            let x = input.face_size * 2 + sub_idx_y;
+                            let y = input.face_size -1;
+                            return (Coordinate{x, y}, Facing::Up)
+                        },
+                    }
+                },
+                (0,2) => {
+                    match facing {
+                        Facing::Up => {
+                            //5u <-> 3l
+                            let x = input.face_size;
+                            let y = input.face_size + sub_idx_x;
+                            return (Coordinate{x, y}, Facing::Right)
+                        },
+                        Facing::Down => panic!("Bad direction"),
+                        Facing::Left => {
+                            //5l <-> 2l
+                            let x = input.face_size;
+                            let y = input.face_size - (sub_idx_y+1);
+                            return (Coordinate{x, y}, Facing::Right)
+                        },
+                        Facing::Right => panic!("Bad direction"),
+                    }
+                },
+                (1,2) => {
+                    match facing {
+                        Facing::Up => panic!("Bad direction"),
+                        Facing::Down => {
+                            //4d <-> 6r
+                            let x = input.face_size-1;
+                            let y = input.face_size * 3 + sub_idx_x;
+                            return (Coordinate{x, y}, Facing::Left)
+                        },
+                        Facing::Left => panic!("Bad direction"),
+                        Facing::Right => {
+                            //4r <-> 1r
+                            let x = input.face_size * 3-1;
+                            let y = input.face_size - (sub_idx_y+1);
+                            return (Coordinate{x, y}, Facing::Left)
+                        },
+                    }
+                },
+                (0,3) => {
+                    match facing {
+                        Facing::Up => panic!("Bad direction"),
+                        Facing::Down => {
+                            //6d <-> 1u
+                            let x = input.face_size * 2 + sub_idx_x;
+                            let y = 0;
+                            return (Coordinate{x, y}, Facing::Down)
+                        },
+                        Facing::Left => {
+                            //6l <-> 2u
+                            let x = input.face_size + sub_idx_y;
+                            let y = 0;
+                            return (Coordinate{x, y}, Facing::Down)
+                        },
+                        Facing::Right => {
+                            //6r <-> 4d
+                            let x = input.face_size + sub_idx_y;
+                            let y = input.face_size * 3-1;
+                            return (Coordinate{x, y}, Facing::Up)
+                        },
+                    }
+                },
+                
+                _ => panic!("Invalid input")
+            }
+        }
+    }
+
+    pub fn step(&self, facing: &Facing, input: &Input, part2: bool) -> (Coordinate, Facing) {
         match facing {
             Facing::Up => {
                 let bound = input.col_bounds.get(&self.x).unwrap();
                 if bound.low == self.y {
-                    Coordinate{x: self.x, y: bound.high}
+                    if part2 {
+                        self.wrap_part2(facing, input)
+                    } else {
+                        (Coordinate{x: self.x, y: bound.high}, *facing)
+                    }
                 } else {
-                    Coordinate{x: self.x, y: self.y-1}
+                    (Coordinate{x: self.x, y: self.y-1}, *facing)
                 }
             },
             Facing::Down => {
                 let bound = input.col_bounds.get(&self.x).unwrap();
                 if bound.high == self.y {
-                    Coordinate{x: self.x, y: bound.low}
+                    if part2 {
+                        self.wrap_part2(facing, input)
+                    } else {
+                        (Coordinate{x: self.x, y: bound.low}, *facing)
+                    }
                 } else {
-                    Coordinate{x: self.x, y: self.y+1}
+                    (Coordinate{x: self.x, y: self.y+1}, *facing)
                 }
             },
             Facing::Left => {
                 let bound = input.row_bounds[self.y];
                 if bound.low == self.x {
-                    Coordinate{x: bound.high, y: self.y}
+                    if part2 {
+                        self.wrap_part2(facing, input)
+                    } else {
+                        (Coordinate{x: bound.high, y: self.y}, *facing)
+                    }
                 } else {
-                    Coordinate{x: self.x-1, y: self.y}
+                    (Coordinate{x: self.x-1, y: self.y}, *facing)
                 }
             },
             Facing::Right => {
                 let bound = input.row_bounds[self.y];
                 if bound.high == self.x {
-                    Coordinate{x: bound.low, y: self.y}
+                    if part2 {
+                        self.wrap_part2(facing, input)
+                    } else {
+                        (Coordinate{x: bound.low, y: self.y}, *facing)
+                    }
                 } else {
-                    Coordinate{x: self.x+1, y: self.y}
+                    (Coordinate{x: self.x+1, y: self.y}, *facing)
                 }
             }
         }
@@ -95,10 +409,18 @@ struct Bound {
     high: usize,
 }
 
+impl Bound {
+    pub fn _contains(&self, p: usize) -> bool {
+        self.low <= p && self.high >= p
+    }
+}
+
 #[derive(Debug)]
 struct Input {
     row_bounds: Vec<Bound>,
     col_bounds: HashMap<usize, Bound>,
+    _max_x: usize,
+    face_size: usize,
     walls: HashSet<Coordinate>,
     instructions: Vec<Instruction>
 }
@@ -197,6 +519,8 @@ impl FromStr for Input {
         Ok(Input {
             row_bounds,
             col_bounds,
+            _max_x: max_x,
+            face_size: if max_x == 150 { 50 } else { 4 },
             walls,
             instructions,
         })
@@ -227,12 +551,13 @@ impl Position {
         match instruction {
             Instruction::Forward(v) => {
                 for _ in 0..*v {
-                    let next = self.position.step(&self.facing, input, part2);
+                    let (next, facing) = self.position.step(&self.facing, input, part2);
                     if input.walls.contains(&next) {
                         //println!("Wall @ {:?}", next);
                         return;
                     } else {
                         self.position = next;
+                        self.facing = facing;
                     }
                 }
             },
@@ -252,7 +577,7 @@ fn part1_sample_works() {
     let mut position = Position::new(&input);
     for i in &input.instructions {
         //println!("{:?}, {:?}", i, position);
-        position.step(&i, &input);
+        position.step(&i, &input, false);
     }
     let result = position.score();
     assert_eq!(result, 6032)
@@ -264,7 +589,7 @@ pub fn part1() -> usize {
     let mut position = Position::new(&input);
     for i in &input.instructions {
         //println!("{:?}, {:?}", i, position);
-        position.step(&i, &input);
+        position.step(&i, &input, false);
     }
     position.score()
 }
@@ -277,16 +602,28 @@ fn part1_works() {
 #[test]
 fn part2_sample_works() {
     let input = parse_input(include_str!("sample.txt"));
-
+    let mut position = Position::new(&input);
+    for i in &input.instructions {
+        //println!("{:?}, {:?}", i, position);
+        position.step(&i, &input, true);
+    }
+    //println!("{:?}", position);
+    let result = position.score();
+    assert_eq!(result, 5031);
     
 }
 
-pub fn part2() -> u32 {
+pub fn part2() -> usize {
     let input = parse_input(include_str!("input.txt"));
-    0
+    let mut position = Position::new(&input);
+    for i in &input.instructions {
+        //println!("{:?}, {:?}", i, position);
+        position.step(&i, &input, true);
+    }
+    position.score()
 }
 
 #[test]
 fn part2_works() {
-    assert_eq!(part2(), 0)
+    assert_eq!(part2(), 34426)
 }
