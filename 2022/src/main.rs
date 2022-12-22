@@ -21,6 +21,7 @@ mod day18;
 mod day19;
 mod day20;
 mod day21;
+mod day22;
 
 fn main() {
     let now = Instant::now();
@@ -212,4 +213,13 @@ fn main() {
     let part2 = day21::part2();
     let duration = now.elapsed().as_micros();
     println!("Day21 Part 2 result in {}us: {}", duration, part2);
+
+    let now = Instant::now();
+    let part1 = day22::part1();
+    let duration = now.elapsed().as_micros();
+    println!("Day22 Part 1 result in {}us: {}", duration, part1);
+    let now = Instant::now();
+    let part2 = day22::part2();
+    let duration = now.elapsed().as_micros();
+    println!("Day22 Part 2 result in {}us: {}", duration, part2);
 }
