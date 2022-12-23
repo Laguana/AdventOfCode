@@ -141,7 +141,6 @@ impl Rock {
 }
 
 fn simulate(input: &Input, steps: usize) -> i64 {
-    // This is not part2 compatible.
     let mut jet_iter = input.jets.iter().cycle();
     let mut field = Field{grid: HashSet::new()};
     let mut next_rock = Rock::initial();

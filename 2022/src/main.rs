@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant, thread};
 
 mod day1;
 mod day2;
@@ -25,6 +25,13 @@ mod day22;
 mod day23;
 
 fn main() {
+    let d17_p2_thread = thread::spawn(|| {
+        let now = Instant::now();
+        let part2 = day17::part2();
+        let duration = now.elapsed().as_micros();
+        (part2, duration)
+    });
+
     let now = Instant::now();
     let part1 = day1::part1();
     let duration = now.elapsed().as_micros();
@@ -173,10 +180,8 @@ fn main() {
     let part1 = day17::part1();
     let duration = now.elapsed().as_micros();
     println!("Day17 Part 1 result in {}us: {}", duration, part1);
-    println!("Please hold for Day17 part 2... [~90s]");
-    let now = Instant::now();
-    let part2 = day17::part2();
-    let duration = now.elapsed().as_micros();
+    println!("Please hold for Day17 part 2... [~2m]");
+    let (part2, duration) = d17_p2_thread.join().unwrap();
     println!("Day17 Part 2 result in {}us: {}", duration, part2);
 
     let now = Instant::now();
