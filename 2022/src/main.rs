@@ -23,6 +23,7 @@ mod day20;
 mod day21;
 mod day22;
 mod day23;
+mod day24;
 
 fn main() {
     let d17_p2_thread = thread::spawn(|| {
@@ -237,4 +238,14 @@ fn main() {
     let part2 = day23::part2();
     let duration = now.elapsed().as_micros();
     println!("Day23 Part 2 result in {}us: {}", duration, part2);
+
+    
+    let now = Instant::now();
+    let part1 = day24::part1();
+    let duration = now.elapsed().as_micros();
+    println!("Day24 Part 1 result in {}us: {}", duration, part1);
+    let now = Instant::now();
+    let part2 = day24::part2();
+    let duration = now.elapsed().as_micros();
+    println!("Day24 Part 2 result in {}us: {}", duration, part2);
 }
