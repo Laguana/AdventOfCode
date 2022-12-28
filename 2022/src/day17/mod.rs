@@ -1,4 +1,4 @@
-use std::{str::FromStr, collections::{HashSet, HashMap}};
+use std::{str::FromStr, collections::HashMap};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Direction {
@@ -88,15 +88,40 @@ struct Rock {
 }
 
 struct Field {
-    grid: HashSet<Coordinate>
+    grid: Vec<u8>,
+    maxy: i64
 }
 
 impl Field {
-    pub fn _render(&self, top: i64) {
-        for y in (0..=top).rev() {
-            println!("|{}|",String::from_iter((0..7).map(|x| if self.grid.contains(&Coordinate { x, y}) {'#'} else {'.'})));
+    pub fn new() -> Field {
+        Field {grid: vec![], maxy: -1}
+    }
+
+    pub fn _render(&self) {
+        for r in self.grid.iter().rev() {
+            println!("|{}|",String::from_iter((0..7).map(|x| if r & (1<<x) != 0 {'#'} else {'.'})));
         }
         println!("---------");
+    }
+
+    pub fn set(&mut self, c: &Coordinate) {
+        while self.maxy < c.y {
+            self.grid.push(0);
+            self.maxy += 1;
+        }
+        assert!(c.y >= 0);
+        self.grid[c.y as usize] |= 1<<c.x;
+    }
+
+    pub fn get(&self, c: &Coordinate) -> bool {
+        if c.y > self.maxy {
+            return false;
+        }
+        return (self.grid[c.y as usize] & (1<<c.x)) != 0
+    }
+
+    pub fn top(&self) -> u128 {
+        self.grid.iter().rev().take(17).fold(0, |acc, r| (acc << 7) | (*r as u128))
     }
 }
 
@@ -120,16 +145,16 @@ impl Rock {
             Direction::Right => self.pos.right(),
         };
         let left_right_tiles = RockType::tiles(&self.kind, &left_right_candidate_coord);
-        let left_right_coord = if left_right_tiles.iter().any(|p| {
-                field.grid.contains(p) || p.x >= 7  || p.x < 0
+        let left_right_coord = if left_right_tiles.into_iter().any(|p| {
+            p.x >= 7  || p.x < 0 || field.get(&p)
             }) {
                 self.pos
             } else {
-                    left_right_candidate_coord
+                left_right_candidate_coord
             };
         let down_coord = left_right_coord.down();
         let down_tiles = RockType::tiles(&self.kind, &down_coord);
-        if down_tiles.iter().any(|p| field.grid.contains(p) || p.y < 0) {
+        if down_tiles.into_iter().any(|p| p.y < 0 || field.get(&p) ) {
             // tile is now set
             self.pos = left_right_coord;
             return true;
@@ -142,9 +167,8 @@ impl Rock {
 
 fn simulate(input: &Input, steps: usize) -> i64 {
     let mut jet_iter = input.jets.iter().cycle();
-    let mut field = Field{grid: HashSet::new()};
+    let mut field = Field::new();
     let mut next_rock = Rock::initial();
-    let mut tallest = 0;
 
     let mut jet_idx = 0;
     let jet_len = input.jets.len();
@@ -154,33 +178,44 @@ fn simulate(input: &Input, steps: usize) -> i64 {
     let mut history = vec![];
     let mut history_idx: HashMap<(u128, usize, RockType), usize> = HashMap::new();
     
-
+    //let mut _fall_duration = 0;
+    //let mut _check_duration = 0;
+    //let mut _key_duration = 0;
+    //let mut _set_duration = 0;
+    //let mut _iter_duration = 0;
 
     for rock in 1..=steps {
-
+        //let iter_start = Instant::now();
         //println!("Rock {}", rock);
         //field.render(tallest);
+        //let now = Instant::now();
         while !next_rock.step(*jet_iter.next().unwrap(), &field) {
             //println!(" {:?}", next_rock.tiles());
             jet_idx += 1;
-            jet_idx %= jet_len;
         }
-        // Rock has landed; add it to the field
-        let new_tiles = next_rock.tiles();
-        tallest = new_tiles.iter().map(|c| c.y).max().unwrap().max(tallest);
-        //println!(" Landed {:?}", new_tiles);
+        jet_idx %= jet_len;
+        //_fall_duration += now.elapsed().as_nanos();
 
-        field.grid.extend(new_tiles);
+        //let now = Instant::now();
+        // Rock has landed; add it to the field
+        next_rock.tiles().into_iter().for_each(|p| field.set(&p));
+        //_set_duration += now.elapsed().as_nanos();
+
+        let tallest = field.maxy;
+
+        //let now = Instant::now();
+        let top_bits = field.top();
+        //_key_duration += now.elapsed().as_nanos();
 
         if cycle_find {
-            let top_bits = (tallest-17..=tallest)
-                .fold(0, |acc, y| acc<<7 | (0..7).fold(0, 
-                    |acc, x| acc<<1 | if field.grid.contains(&Coordinate::new(x, y)) {1} else {0}));
+            
             let history_key = (top_bits, jet_idx, next_rock.kind);
+            //let now = Instant::now();
             match history_idx.insert(history_key, history.len()) {
                 Some(prev_idx) => {
                     let (cycle_start, height_start) = history[prev_idx];
                     //println!("Found cycle! {} {} -> {} {}", cycle_start, height_start, rock, tallest);
+                    //println!("fall time {}, key time {}, set time {},  check time {}, iter time {}", _fall_duration, _key_duration, _set_duration, _check_duration, _iter_duration);
                     //field._render(tallest);
                     let cycle_length = rock-cycle_start;
                     let height_delta = tallest - height_start;
@@ -196,11 +231,14 @@ fn simulate(input: &Input, steps: usize) -> i64 {
                     history.push((rock, tallest));
                 },
             }
+            //_check_duration += now.elapsed().as_nanos();
         }
 
-        next_rock = Rock::next(&next_rock, tallest)
+        next_rock = Rock::next(&next_rock, tallest);
+        //_iter_duration += iter_start.elapsed().as_nanos();
     }
-    tallest+1
+
+    field.maxy + 1
 }
 
 #[test]
@@ -231,10 +269,14 @@ fn part2_sample_works() {
 
 pub fn part2() -> i64 {
     let input = parse_input(include_str!("input.txt"));
-    simulate(&input, 1_000_000_000_000)
+
+    //let now = Instant::now();
+    let result = simulate(&input, 1_000_000_000_000);
+    //println!("part2 took {}us", now.elapsed().as_nanos());
+    result
 }
 
-//#[test]
-fn _part2_works() {
-    assert_eq!(part2(), 1500874635587)
+#[test]
+fn part2_works() {
+    assert_eq!(part2(), 1500874635587);
 }
