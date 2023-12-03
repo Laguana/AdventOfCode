@@ -30,7 +30,6 @@ part1(G, Out) :-
 
 adjacent_to_coord(X, num(XS, _, XE)) :- (X >=XS-1, X =< XE).
 
-gear_ratio(G, Y, S) :- gear_ratio(G, Y, S, _).
 gear_ratio(G, Y, sym(SX, S), Ratio) :-
     [S] = "*",
     YPrev is Y-1, YNext is Y+1,
@@ -45,8 +44,7 @@ gear_ratio(G, Y, sym(SX, S), Ratio) :-
 gear_ratios(G, Ratios) :- gear_ratios(G, Ratios, G, 0).
 gear_ratios(_, [], [], _).
 gear_ratios(G, Ratios, [H|T], Y) :-
-    include(gear_ratio(G, Y), H, Gears),
-    maplist(gear_ratio(G, Y), Gears, RHead),
+    convlist(gear_ratio(G, Y), H, RHead),
     YT is Y+1, gear_ratios(G, RTail, T, YT),
     append(RHead, RTail, Ratios).
 
