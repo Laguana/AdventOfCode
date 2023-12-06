@@ -11,6 +11,9 @@ line([C|Cs])  --> [C], line(Cs).
 
 eol --> ("\r\n" | "\n" | call(eos)), !.
 
+spaces --> [].
+spaces --> " ", spaces.
+
 digits([H|T]) --> [H], {char_type(H, digit)}, !, (digits(T) | {T=[]}).
 number(N) --> digits(D), {number_chars(N, D)}.
 word([H|T]) --> [H], {char_type(H, alpha)}, !, (word(T) | {T=[]}).
