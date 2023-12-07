@@ -22,7 +22,8 @@ multiplicity(E, [_|T], V) :- multiplicity(E, T, V).
 
 
 % What if we just didn't do any fanciness!
-hand_type(Hand, Type) :-
+% This works, but is less efficient
+hand_type_prologgy(Hand, Type) :-
     msort(Hand, Sorted),
     hand_type_msorted(Sorted, Type).
 hand_type_msorted([C,C,C,C,C], 7):- !.
@@ -38,7 +39,7 @@ hand_type_msorted(H, 2) :-
     permutation(H, [X,X,_,_,_]), !.
 hand_type_msorted(_, 1).
 
-/*
+
 hand_type(Hand, Type) :- 
     sort(Hand, Sorted), % Note: Also deduplicates
     hand_type_sorted(Sorted, Hand, Type).
@@ -58,7 +59,6 @@ hand_type_sorted([A,B,_], Hand, Type) :-
     ; Type=3. % 2 pair
 hand_type_sorted([_,__,_,_], _, 2). % one pair
 hand_type_sorted([_,_,_,_,_], _, 1). % high card
-*/
 
 is_type(T,H) :- H.type = T.
 
