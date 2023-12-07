@@ -21,6 +21,24 @@ multiplicity(E, [E|T], V) :- !, multiplicity(E, T, VT), V is VT+1.
 multiplicity(E, [_|T], V) :- multiplicity(E, T, V).
 
 
+% What if we just didn't do any fanciness!
+hand_type(Hand, Type) :-
+    msort(Hand, Sorted),
+    hand_type_msorted(Sorted, Type).
+hand_type_msorted([C,C,C,C,C], 7):- !.
+hand_type_msorted(H, 6) :-
+    permutation(H, [X,X,X,X,_]), !.
+hand_type_msorted(H, 5) :-
+    permutation(H, [X,X,X,Y,Y]), !.
+hand_type_msorted(H, 4) :-
+    permutation(H, [X,X,X,_,_]), !.
+hand_type_msorted(H, 3) :-
+    permutation(H, [X,X,Y,Y,_]), !.
+hand_type_msorted(H, 2) :-
+    permutation(H, [X,X,_,_,_]), !.
+hand_type_msorted(_, 1).
+
+/*
 hand_type(Hand, Type) :- 
     sort(Hand, Sorted), % Note: Also deduplicates
     hand_type_sorted(Sorted, Hand, Type).
@@ -40,6 +58,7 @@ hand_type_sorted([A,B,_], Hand, Type) :-
     ; Type=3. % 2 pair
 hand_type_sorted([_,__,_,_], _, 2). % one pair
 hand_type_sorted([_,_,_,_,_], _, 1). % high card
+*/
 
 is_type(T,H) :- H.type = T.
 
@@ -73,9 +92,8 @@ joker_hand([10|T], [0|JT]) :- !, joker_hand(T, JT).
 joker_hand([H|T], [H|JT]) :- joker_hand(T, JT).
 
 joker_hand_type(Hand, JokerType) :-
-    sort(Hand, Sorted), % Note: Also deduplicates
     multiplicity(0, Hand, NJokers),
-    hand_type_sorted(Sorted, Hand, Type),
+    hand_type(Hand, Type),
     joker_hand_type(Type,NJokers, JokerType).
 joker_hand_type(7, _, 7).
 joker_hand_type(6, _, 7). % we assume at least one joker
