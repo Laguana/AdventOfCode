@@ -1,0 +1,10 @@
+LR
+
+JJA = (JJB, XXX)
+JJB = (XXX, JJZ)
+JJZ = (JJB, XXX)
+KKA = (KKB, XXX)
+KKB = (KKC, KKC)
+KKC = (KKZ, KKZ)
+KKZ = (KKB, KKB)
+XXX = (XXX, XXX)
