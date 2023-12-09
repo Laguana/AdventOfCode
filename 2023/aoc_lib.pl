@@ -17,6 +17,7 @@ spaces --> " ", spaces.
 
 digits([H|T]) --> [H], {char_type(H, digit)}, !, (digits(T) | {T=[]}).
 number(N) --> digits(D), {number_chars(N, D)}.
+integer(I) --> ("-", {Adj = -1} | {Adj = 1}), number(N), {I is Adj * N}.
 word([H|T]) --> [H], {char_type(H, alpha)}, !, (word(T) | {T=[]}).
 word_atom(A) --> word(W), {atom_codes(A, W)}.
 
