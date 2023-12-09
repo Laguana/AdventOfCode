@@ -1,6 +1,7 @@
 :- use_module(library(pio)).
 :- use_module(library(lists)).
 :- use_module(library(apply)).
+:- use_module(library(dicts)).
 :- set_prolog_flag(double_quotes, codes).
 
 lines([])     --> call(eos), !.
@@ -17,6 +18,7 @@ spaces --> " ", spaces.
 digits([H|T]) --> [H], {char_type(H, digit)}, !, (digits(T) | {T=[]}).
 number(N) --> digits(D), {number_chars(N, D)}.
 word([H|T]) --> [H], {char_type(H, alpha)}, !, (word(T) | {T=[]}).
+word_atom(A) --> word(W), {atom_codes(A, W)}.
 
 
 eos([],[]).
