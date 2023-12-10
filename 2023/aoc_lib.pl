@@ -12,6 +12,9 @@ line([C|Cs])  --> [C], line(Cs).
 
 eol --> ("\r\n" | "\n" | call(eos)), !.
 
+eos([],[]).
+
+
 spaces --> [].
 spaces --> " ", spaces.
 
@@ -22,4 +25,3 @@ word([H|T]) --> [H], {char_type(H, alpha)}, !, (word(T) | {T=[]}).
 word_atom(A) --> word(W), {atom_codes(A, W)}.
 
 
-eos([],[]).
