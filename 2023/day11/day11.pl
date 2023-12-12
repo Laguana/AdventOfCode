@@ -104,4 +104,4 @@ part2(In, Out) :-
 
 %:- phrase_from_file(lines(I), "day11.example.in"),  part2(I, 1030).
 
-:- phrase_from_file(lines(I), "day11.in"), part2(I, Out), print(Out).
+:- phrase_from_file(lines(I), "day11.in"), part2(I, 597714117556).%Out), print(Out).
