@@ -2,6 +2,7 @@
 :- use_module(library(lists)).
 :- use_module(library(apply)).
 :- use_module(library(dicts)).
+:- use_module(library(clpfd)).
 :- set_prolog_flag(double_quotes, codes).
 
 lines([])     --> call(eos), !.
