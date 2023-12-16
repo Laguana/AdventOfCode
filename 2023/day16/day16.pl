@@ -4,6 +4,24 @@ input(I) --> lines(I).
 
 pos_atom(X,Y, K) :- atom_concat(X,:, M), atom_concat(M,Y,K).
 
+starting_dir(1,_,_,_,right).
+starting_dir(_,1,_,_,down).
+starting_dir(X,_,X,_,left).
+starting_dir(_,Y,_,Y,up).
+
+energize(In, Energized, Out) :-
+    length(In,MaxY),
+    In = [H|_],
+    length(H, MaxX),
+    !,
+    aggregate_all(max(O, E), energize_(In, MaxX, MaxY, E, O), max(Out, Energized)).
+energize_(In, MaxX, MaxY, Energized, Out) :-
+    between(1,MaxY, Y),
+    between(1,MaxX, X),
+    starting_dir(X,Y,MaxX,MaxY,Dir),
+    energize(In, MaxX, MaxY, [p(X,Y,Dir)],energized{}, Energized),
+    dict_keys(Energized, K),
+    length(K, Out).
 energize(In, Energized) :-
     length(In,MaxY),
     In = [H|_],
@@ -29,10 +47,15 @@ energize_(Grid, MaxX, MaxY, C, p(X,Y,Dir), T, EIn, EOut) :-
     append(New, T, Next),
     energize(Grid, MaxX, MaxY, Next, EIn, EOut).
 
+dir_kind(up, vert).
+dir_kind(down, vert).
+dir_kind(right, horiz).
+dir_kind(left, horiz).
+
 redundant(_,both,_).
 redundant(Dir, Dir,_).
 redundant(up, down, C) :- \+ member(C, "/\\").
-redundant(down,up, C) :- \+ member(C, "/\\").
+redundant(down, up, C) :- \+ member(C, "/\\").
 redundant(left, right, C) :- \+ member(C, "/\\").
 redundant(right, left, C) :- \+ member(C, "/\\").
 
@@ -70,15 +93,31 @@ single_energize(C, X, Y, Dir, [p(XX,YY, D1), p(X2,Y2, D2)]) :-
     step(X,Y,D1, XX, YY),
     step(X,Y,D2, X2, Y2).
 
+print_energy(In,E) :-
+    length(In,MaxY),
+    In = [H|_],
+    length(H, MaxX),
+    (
+        between(1,MaxY,Y),
+        nl,
+        between(1,MaxX,X),
+        (pos_atom(X,Y,K), D = E.get(K) -> (D=both -> write(2);write(#)); write('.')), fail
+    ).
+print_energy(_,_).
+
 part1(I, O) :-
-    energize(I,E),
-    dict_keys(E,K),
+    energize(I,E),!,
+    %print_energy(I,E),
+    dict_keys(E,K),!,
     length(K,O).
+
+part2(I,O) :-
+    energize(I,_,O).
 
 :- phrase_from_file(input(I), "day16.example.in"), part1(I, 46).
 
 :- phrase_from_file(input(I), "day16.in"), part1(I, 7608).%Out), print(Out).
 
-%:- phrase_from_file(input(I), "day16.example.in"),  part2(I, ).
+:- phrase_from_file(input(I), "day16.example.in"),  part2(I, 51).
 
-%:- phrase_from_file(input(I), "day16.in"), part2(I, Out), print(Out).
+:- phrase_from_file(input(I), "day16.in"), part2(I, 8221).%Out), print(Out).
