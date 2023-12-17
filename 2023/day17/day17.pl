@@ -66,9 +66,10 @@ astar(Costs, p(X,Y), Cost, PX) :-
     astar(g(Costs,TX,TY, PX), p(TX,TY), Heap, states{}.put(K, state{pred:none, g:0, f:H}), _, Cost).
 
 astar(_,_,Heap, _,_,_) :- empty_heap(Heap), !,fail.
-astar(_,p(X,Y), Heap, State, State, Cost) :- 
+astar(g(_,_,_,PX),p(X,Y), Heap, State, State, Cost) :- 
     %get_from_heap(Heap, Cost, p(X,Y,_,_),_),
-    Heap=[p(Cost,X,Y,_,_)|_],
+    Heap=[p(Cost,X,Y,_,Run)|_],
+    (PX=p1;Run >=4),
     !.
 astar(g(Costs,MX,MY, PX), p(TX,TY), Heap, InState, OutState, OutCost) :-
     %get_from_heap(Heap, _, p(X,Y,Dir,Run), THeap),
@@ -108,4 +109,4 @@ part2(I,O) :-
 
 :- phrase_from_file(input(I), "day17.example.in"),  part2(I, 94).
 
-%:- phrase_from_file(input(I), "day17.in"), part2(I, Out), print(Out).
+%:- phrase_from_file(input(I), "day17.in"), part2(I, 734).%Out), print(Out).
