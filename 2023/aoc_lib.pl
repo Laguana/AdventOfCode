@@ -3,6 +3,7 @@
 :- use_module(library(apply)).
 :- use_module(library(dicts)).
 :- use_module(library(clpfd)).
+:- use_module(library(heaps)).
 :- set_prolog_flag(double_quotes, codes).
 
 lines([])     --> call(eos), !.
