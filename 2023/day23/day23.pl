@@ -97,34 +97,39 @@ follow_path(I,_, p(X,Y), L, L-p(X,Y), _) :-
 
 %:- table longest_path/4.
 
-longest_path(Paths,From, Seen, Longest) :-
+longest_path(Paths, From, Longest) :-
+    longest_path(Paths, From, [], 0, 0, Longest).
+
+longest_path(Paths,From, Seen, Length, BestSoFar, Longest) :-
     xy_key(From, K),
     Steps = Paths.get(K),!,
-    sort([From|Seen], TSeen), longest_path(Paths, Steps, TSeen, -1-[], LD-LP),
+    longest_path(Paths, Steps, [From|Seen], -1-[], Length, BestSoFar, LD-LP),
     (LP = [] 
     -> Longest= -1-[]
-    ; Longest = LD-[From|LP]),!.
-longest_path(Paths,From, _, Longest) :-
+    ; Longest = LD-[From|LP]),!.%, print(From), print(Longest), nl),!.
+longest_path(Paths,From, Seen, Length, BL, Longest) :-
     xy_key(From, K),
     (\+ _ = Paths.get(K)),
-    Longest = 0-[From].
-longest_path(_, [], _, Longest, Longest) :- !.
-longest_path(Paths, [D-H|T], Seen, SD-SP, Longest) :- 
+    Longest = Length-Seen,
+    (BL < Length -> print(Longest), nl; true).
+longest_path(_, [], _, Longest, _, _, Longest) :- !.
+longest_path(Paths, [D-H|T], Seen, SD-SP, Length, BestSoFar, Longest) :- 
     member(H, Seen) 
-    -> longest_path(Paths, T, Seen, SD-SP, Longest)
-    ; longest_path(Paths, H, Seen, HLong-HP),!,
-
-        TSoFar is max(SD, D+HLong),
+    -> longest_path(Paths, T, Seen, SD-SP, Length, BestSoFar, Longest)
+    ; HLength is D + Length, longest_path(Paths, H, Seen, HLength, BestSoFar, HLong-HP),!,
+        TSoFar is max(SD, HLong),
         (TSoFar = SD -> TP = SP; TP=HP),
-        longest_path(Paths, T, Seen, TSoFar-TP, Longest).
+        (TSoFar > BestSoFar -> TB=TSoFar; TB=BestSoFar),
+        longest_path(Paths, T, Seen, TSoFar-TP, Length, TB, Longest).
 
 part1(I, O) :-
     paths_from_grid(I, P, p1),
-    longest_path(P, p(1,0), [], O-_).
+    longest_path(P, p(1,0), O-_).
 
 part2(I, O) :-
     paths_from_grid(I, P, p2),
-    longest_path(P, p(1,0), [], O-_).
+    longest_path(P, p(1,0), O-Path),
+    print('path:'), print(Path), nl.
 
 
 
@@ -134,4 +139,4 @@ part2(I, O) :-
 
 :- phrase_from_file(input(I), "day23.example.in"),  part2(I, 154).
 
-%:- phrase_from_file(input(I), "day23.in"), part2(I, Out), print(Out).
+:- phrase_from_file(input(I), "day23.in"), part2(I, 6804).%Out), print(Out).
