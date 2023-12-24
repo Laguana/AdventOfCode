@@ -53,16 +53,16 @@ drop_blocks([block(X,Y,Z,XX,YY,ZZ)| T], Id, In, Supports, Out) :-
     % We are now H+1~(H+1+(ZZ-Z)) in (X,Y)~(XX,YY)
     bagof(K, keys(X,XX,Y,YY, K), Ks),
     max_height(In, Ks, H-Support),
+    sort(Support,SSupport),
     ZBottom is H+1,
     ZTop is H+1+(ZZ-Z),
     add_block(In, Ks, [ZTop-ZBottom]-Id, Mid),
     TId is Id + 1,!,
-    drop_blocks(T, TId, Mid, [Id-block(X,Y,Z,XX,YY,ZZ)-Support|Supports],Out).
+    drop_blocks(T, TId, Mid, [Id-block(X,Y,Z,XX,YY,ZZ)-SSupport|Supports],Out).
 
 redundant_supports(R,[],R).
 redundant_supports(I, [_-_-L|T], R) :-
-    sort(L,SL),
-    ([X] = SL 
+    ([X] = L 
     -> (select(X,I,IT) 
         -> redundant_supports(IT,T,R)
         ; redundant_supports(I,T,R)
@@ -78,10 +78,40 @@ part1(I,O) :-
     redundant_supports(Ids, Supports, Redundant),
     length(Redundant, O).
 
+
+number_supported(L, Out) :-
+    number_supported(L, [], 0, Out).
+number_supported([], _, Acc, Acc).
+number_supported([H|T], Above, Acc, Out) :-
+    H = Id-_-Support,
+    fall_when_removed(Id, Above, V),
+    %(V \= 0 -> print(Id), print(=), print(V),nl;true),
+    TAcc is Acc + V,
+    number_supported(T, [Id-Support|Above], TAcc, Out).
+
+fall_when_removed(Id, Above, V) :-
+    fall_when_removed_([Id], Above, V).
+fall_when_removed_(_,[], 0).
+fall_when_removed_(L, [Id-Support|T], V) :-
+    subset(Support, L),!,
+    fall_when_removed_([Id|L], T, V0),
+    V is V0 + 1.
+fall_when_removed_(L, [_|T], V) :-
+    !,
+    fall_when_removed_(L, T, V).
+
+
+part2(I,O) :-
+    zsort_blocks(I,S),
+    drop_blocks(S,result(_, Supports)),
+    number_supported(Supports, O).
+
 :- phrase_from_file(input(I), "day22.example.in"), part1(I, 5).
 
-:- phrase_from_file(input(I), "day22.in"), part1(I, Out), print(Out).
+:- phrase_from_file(input(I), "day22.in"), part1(I, 411).%Out), print(Out).
 
-%:- phrase_from_file(input(I), "day22.example.in"),  part2(I, ).
+:- phrase_from_file(input(I), "day22.example.in"),  part2(I, 7).
 
-%:- phrase_from_file(input(I), "day22.in"), part2(I, Out), print(Out).
+:- phrase_from_file(input(I), "day22.example2.in"),  part2(I, 1).
+
+:- phrase_from_file(input(I), "day22.in"), part2(I, 47671).%Out), print(Out).
