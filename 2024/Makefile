@@ -1,5 +1,5 @@
-CFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -g -O2
-CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++20 -g -O2
+CFLAGS = -Wall -Wextra -Wpedantic -std=c++23 -g -O2
+CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++23 -g -O2
 LINK.o = $(LINK.cc)
 
 %.in.h: %.input
