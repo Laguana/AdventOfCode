@@ -1,6 +1,7 @@
 CFLAGS = -Wall -Wextra -Wpedantic -std=c++23 -g -O2
 CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++23 -g -O2
 LINK.o = $(LINK.cc)
+CXX=g++-14
 
 %.in.h: %.input
 	xxd -i $< > $@
@@ -35,7 +36,17 @@ day3/day3_test.o: day3/day3_test.cc day3/day3.in.h
 
 day3: day3/day3 day3/day3_test
 
-.PHONY: all day1 day2 day3
+day4/day4.o: day4/day4.cc day4/day4.in.h
+
+day4/day4: day4/day4.o day4/day4_lib.o
+
+day4/day4_test.o: day4/day4_test.cc day4/day4.in.h
+
+day4/day4_test: day4/day4_test.o day4/day4_lib.o
+
+day4: day4/day4 day4/day4_test
+
+.PHONY: all day1 day2 day3 day4
 
 
 all: day1 day2 day3
