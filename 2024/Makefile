@@ -1,5 +1,5 @@
 CFLAGS = -Wall -Wextra -Wpedantic -std=c++23 -g -O2
-CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++23 -g -O2
+CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++23 -g -O2 -fno-exceptions
 LINK.o = $(LINK.cc)
 CXX=g++-14
 
@@ -46,7 +46,17 @@ day4/day4_test: day4/day4_test.o day4/day4_lib.o
 
 day4: day4/day4 day4/day4_test
 
-.PHONY: all day1 day2 day3 day4
+day5/day5.o: day5/day5.cc day5/day5.in.h
+
+day5/day5: day5/day5.o day5/day5_lib.o
+
+day5/day5_test.o: day5/day5_test.cc day5/day5.in.h
+
+day5/day5_test: day5/day5_test.o day5/day5_lib.o
+
+day5: day5/day5 day5/day5_test
+
+.PHONY: all day1 day2 day3 day4 day4
 
 
-all: day1 day2 day3
+all: day1 day2 day3 day4 day5
