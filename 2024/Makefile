@@ -56,7 +56,19 @@ day5/day5_test: day5/day5_test.o day5/day5_lib.o
 
 day5: day5/day5 day5/day5_test
 
-.PHONY: all day1 day2 day3 day4 day4
+day6/day6.o: day6/day6.cc day6/day6.in.h
+
+day6/day6: day6/day6.o day6/day6_lib.o
+
+day6/day6_test.o: day6/day6_test.cc day6/day6.in.h
+
+day6/day6_test: day6/day6_test.o day6/day6_lib.o
+
+day6: day6/day6 day6/day6_test
 
 
-all: day1 day2 day3 day4 day5
+
+.PHONY: all day1 day2 day3 day4 day5 day6
+
+
+all: day1 day2 day3 day4 day5 day6
