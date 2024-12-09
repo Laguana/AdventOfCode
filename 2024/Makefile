@@ -86,7 +86,17 @@ day8/day8_test: day8/day8_test.o day8/day8_lib.o
 
 day8: day8/day8 day8/day8_test
 
-.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8
+day9/day9.o: day9/day9.cc day9/day9.in.h
+
+day9/day9: day9/day9.o day9/day9_lib.o
+
+day9/day9_test.o: day9/day9_test.cc day9/day9.in.h
+
+day9/day9_test: day9/day9_test.o day9/day9_lib.o
+
+day9: day9/day9 day9/day9_test
+
+.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9
 
 
-all: day1 day2 day3 day4 day5 day6 day7 day8
+all: day1 day2 day3 day4 day5 day6 day7 day8 day9
