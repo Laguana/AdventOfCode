@@ -6,6 +6,8 @@ CXX=g++-14
 %.in.h: %.input
 	xxd -i $< > $@
 
+.DEFAULT_GOAL := all
+
 day1/day1.o: day1/day1.cc day1/day1.in.h
 
 day1/day1: day1/day1.o day1/day1_lib.o
@@ -96,7 +98,17 @@ day9/day9_test: day9/day9_test.o day9/day9_lib.o
 
 day9: day9/day9 day9/day9_test
 
-.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9
+day10/day10.o: day10/day10.cc day10/day10.in.h
+
+day10/day10: day10/day10.o day10/day10_lib.o
+
+day10/day10_test.o: day10/day10_test.cc day10/day10.in.h
+
+day10/day10_test: day10/day10_test.o day10/day10_lib.o
+
+day10: day10/day10 day10/day10_test
+
+.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9 day10
 
 
-all: day1 day2 day3 day4 day5 day6 day7 day8 day9
+all: day1 day2 day3 day4 day5 day6 day7 day8 day9 day10
