@@ -7,8 +7,7 @@ class Input {
 
     static Input parse(const unsigned char* start, std::size_t len);
 
-    uint64_t cost_field() const;
-    uint64_t discount_field() const;
+    uint64_t cost_field(bool discounted = false) const;
 
     private:
 

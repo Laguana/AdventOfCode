@@ -32,12 +32,34 @@ int example_works() {
     return 0;
 }
 
-int par1t1_works() {
+int part1_works() {
     auto input = Input::parse(day12_day12_input, day12_day12_input_len);
 
     auto result = input.cost_field();
     if (result != 1400386) {
         std::cout << "Expected 1400386 but got " << result << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+int example2_works() {
+    auto parsed = Input::parse((const unsigned char*)example.c_str(), example.length());
+
+    auto result = parsed.cost_field(true);
+    if (result != 1206) {
+        std::cout << "Expected 1206 but got " << result << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+int part2_works() {
+    auto input = Input::parse(day12_day12_input, day12_day12_input_len);
+
+    auto result = input.cost_field(true);
+    if (result != 851994) {
+        std::cout << "Expected 851994 but got " << result << std::endl;
         return 1;
     }
     return 0;
@@ -49,7 +71,11 @@ int main() {
     failures += parsing_works();
 
     failures += example_works();
-    failures += par1t1_works();
+    failures += part1_works();
+
+    failures += example2_works();
+
+    failures += part2_works();
 
     if (failures >0) {
         std::cout << "Encountered " << failures << " failures!" << std::endl;
