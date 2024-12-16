@@ -61,6 +61,17 @@ int example2_works() {
     return 0;
 }
 
+int part2_works() {
+auto input = Input::parse(day16_day16_input, day16_day16_input_len);
+
+    auto result = input.shortest_paths();
+    if (result != 645) {
+        std::cout << "Expected 645 but got " << result << std::endl;
+        return -1;
+    }
+    return 0;    
+}
+
 int main() {
     int failures = 0;
 
@@ -71,6 +82,8 @@ int main() {
     failures += part1_works();
 
     failures += example2_works();
+
+    failures += part2_works();
 
     if (failures > 0) {
         std::cout << "Encountered " << failures << " failures!" << std::endl;
