@@ -142,3 +142,31 @@ std::string Machine::run_machine() {
     }
     return output.str();
 }
+
+uint64_t find_quine_rec(std::string goal, uint64_t acc, int idx, const std::vector<Opcode> &instructions) {
+    //std::cout << goal << " " << idx << std::endl;
+    for(int i = 0; i < 1<<3; ++i) {
+        Machine m(acc<<3 | i,0,0,instructions);
+        if (goal == m.run_machine()) {
+            //std::cout << std::oct << (acc << 3 | i) << std::dec << " gave " << goal << std::endl;
+            if (idx == 0) {
+                //std::cout << "Found!!" << std::endl;
+                return acc<<3 | i;
+            }
+            auto ret = find_quine_rec(std::to_string(instructions[idx-1]) + "," + goal, acc<<3 | i, idx-1, instructions);
+            if (ret != 0) {
+                return ret;
+            }
+        }
+    }
+    return 0;
+}
+
+uint64_t Input::find_quine() const {
+    std::string goal = "";
+
+    return find_quine_rec(std::to_string(machine.instructions[machine.instructions.size()-1]),
+                 0,
+                 machine.instructions.size()-1,
+                 machine.instructions);
+}

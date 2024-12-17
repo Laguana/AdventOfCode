@@ -14,22 +14,21 @@ enum Opcode: char {
     Cdv = 7,
 };
 
-class Machine {
-    private:
-
+struct Machine {
+    
     int64_t regA, regB, regC;
     unsigned int ip;
 
-    std::vector<Opcode> instructions;
-
-    int64_t combo(int address) const;
-
-    public:
+    const std::vector<Opcode> instructions;
 
     std::string run_machine();
 
-    Machine(int64_t regA, int64_t regB, int64_t regC, std::vector<Opcode> instructions):
+    Machine(int64_t regA, int64_t regB, int64_t regC, const std::vector<Opcode> &instructions):
         regA(regA), regB(regB), regC(regC), ip(0), instructions(instructions) {}
+
+    private:
+
+    int64_t combo(int address) const;
 };
 
 class Input {
@@ -38,6 +37,8 @@ class Input {
     static Input parse(const unsigned char* start, std::size_t len);
 
     std::string run_machine() const;
+
+    uint64_t find_quine() const;
 
     private:
     Machine machine;

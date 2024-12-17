@@ -38,6 +38,17 @@ int part1_works() {
     return 0;
 }
 
+int part2_works() {
+    auto input = Input::parse(day17_day17_input, day17_day17_input_len);
+
+    auto result = input.find_quine();
+    if (result != 04532306073267275) {
+        std::cout << "Expected " << 04532306073267275 << " but got " << result << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
 int main() {
     int failures = 0;
 
@@ -46,6 +57,8 @@ int main() {
     failures += example_works();
 
     failures += part1_works();
+
+    failures += part2_works();
 
     if (failures > 0) {
         std::cout << "Encountered " << failures << " failures!" << std::endl;

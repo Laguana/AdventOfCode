@@ -132,7 +132,7 @@ int main() {
     
 
 
-    std::cout << "Part 2: " << 04532306073267275 << std::endl;
+    std::cout << "Part 2: " << input.find_quine() << std::endl;
 
     return 0;
 }
