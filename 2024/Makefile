@@ -168,7 +168,18 @@ day16/day16_test: day16/day16_test.o day16/day16_lib.o
 
 day16: day16/day16 day16/day16_test
 
-.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16
+day17/day17.o: day17/day17.cc day17/day17.in.h
+
+day17/day17: day17/day17.o day17/day17_lib.o
+
+day17/day17_test.o: day17/day17_test.cc day17/day17.in.h
+
+day17/day17_test: day17/day17_test.o day17/day17_lib.o
+
+day17: day17/day17 day17/day17_test
 
 
-all: day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16
+.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16 day17
+
+
+all: day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16 day17
