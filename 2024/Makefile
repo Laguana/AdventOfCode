@@ -202,7 +202,7 @@ day20/day20.o: day20/day20.cc day20/day20.in.h
 
 day20/day20: day20/day20.o day20/day20_lib.o
 
-day20/day20_test.o: day20/day20_test.cc day20/day20.in.h
+day20/day20_test.o: day20/day20_test.cc day20/day20.in.h day20/day20_lib.h
 
 day20/day20_test: day20/day20_test.o day20/day20_lib.o
 
