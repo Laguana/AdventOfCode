@@ -99,10 +99,24 @@ uint64_t Input::shortest_path(int size, unsigned int horizon) const {
 }
 
 Point Input::find_cutoff(int size) const {
+    std::size_t hi = blocks.size(), lo = 0;
+
+    while(hi > lo+1) {
+        auto mid = (hi+lo)/2;
+        if (shortest_path(size, mid) == 0) {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+    }
+    return blocks[hi-1];
+
+    /*
     for(unsigned int i = 1; i < blocks.size(); ++i) {
         if (shortest_path(size, i) == 0) {
             return blocks[i-1];
         }
     }
     std::unreachable();
+    */
 }
