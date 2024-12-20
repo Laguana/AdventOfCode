@@ -198,8 +198,18 @@ day19/day19_test: day19/day19_test.o day19/day19_lib.o
 
 day19: day19/day19 day19/day19_test
 
+day20/day20.o: day20/day20.cc day20/day20.in.h
 
-.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16 day17 day18 day19
+day20/day20: day20/day20.o day20/day20_lib.o
+
+day20/day20_test.o: day20/day20_test.cc day20/day20.in.h
+
+day20/day20_test: day20/day20_test.o day20/day20_lib.o
+
+day20: day20/day20 day20/day20_test
 
 
-all: day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16 day17 day18 day19
+.PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16 day17 day18 day19 day20
+
+
+all: day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 day11 day12 day13 day14 day15 day16 day17 day18 day19 day20
