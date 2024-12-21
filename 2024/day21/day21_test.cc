@@ -21,6 +21,17 @@ int example_works() {
     auto result = parsed.score_codes();
     if (result != 126384) {
         std::cout << "Expected 126384 but got " << result << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+int part1_works() {
+    auto parsed = Input::parse(day21_day21_input, day21_day21_input_len);
+    auto result = parsed.score_codes();
+    if (result != 248684) {
+        std::cout << "Expected 248684 but got " << result << std::endl;
+        return 1;
     }
     return 0;
 }

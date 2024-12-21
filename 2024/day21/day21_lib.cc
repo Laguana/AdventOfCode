@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <utility>
+#include <algorithm>
 #include <unordered_map>
 
 Input Input::parse(const unsigned char* start, std::size_t len) {
@@ -99,6 +100,7 @@ uint64_t dirpad_shortest(int button, int depth) {
 
 }
 
+/*
 uint64_t shortest_input(const std::vector<unsigned char> &code) {
     // On each keypad, we are doing a circuit from A to a list of targets and back to A
     // to be maximally fast we want as much repetition in directions as possible
@@ -189,13 +191,145 @@ uint64_t shortest_input(const std::vector<unsigned char> &code) {
     
     return result;
 }
+*/
+enum Dirpad: unsigned char {
+    Up,
+    Down,
+    A,
+    Left,
+    Right,
+};
+const char* dirpad_lookup = "^vA<>";
+
+std::vector<Dirpad> expand(const std::vector<Dirpad> & input) {
+    std::vector<Dirpad> result;
+
+    const std::vector<int> x_pos {1,1,2,0,2};
+    const std::vector<int> y_pos {0,1,0,1,1};
+
+    Dirpad current = Dirpad::A;
+
+    for(auto d: input) {
+        int dx = x_pos[d]-x_pos[current];
+        int dy = y_pos[d]-y_pos[current];
+
+        // prefer right, down, up, left;
+        while(dx > 0) {
+            result.push_back(Dirpad::Right);
+            --dx;
+        }
+        while(dy > 0) {
+            result.push_back(Dirpad::Down);
+            --dy;
+        }
+        
+        while(dx < 0) {
+            result.push_back(Dirpad::Left);
+            ++dx;
+        }
+        while(dy < 0) {
+            result.push_back(Dirpad::Up);
+            ++dy;
+        }
+
+        result.push_back(Dirpad::A);
+        current = d;
+    }
+
+    return result;
+}
+
+uint64_t shortest_input(const std::vector<unsigned char> &code) {
+
+    const std::vector<int> x_pos = {1,0,1,2,0,1,2,0,1,2,2};
+    const std::vector<int> y_pos = {3,2,2,2,1,1,1,0,0,0,3};
+
+    unsigned char current = 10;
+
+    std::vector<Dirpad> stage1;
+
+    for(auto key: code) {
+        int dx = x_pos[key]-x_pos[current];
+        int dy = y_pos[key]-y_pos[current];
+
+        // prefer right first, then up/down, then left
+        // actually not always best??
+        // <<^^ encode shorter than ^^<<
+
+        std::vector<Dirpad> candidate;
+        
+        while(dx > 0) {
+            candidate.push_back(Dirpad::Right);
+            --dx;
+        }
+        while(dy > 0) {
+            candidate.push_back(Dirpad::Down);
+            --dy;
+        }
+        while(dy < 0) {
+            candidate.push_back(Dirpad::Up);
+            ++dy;
+        }
+        while(dx < 0) {
+            candidate.push_back(Dirpad::Left);
+            ++dx;
+        }
+
+        if ((x_pos[key] == 0 || x_pos[current] == 0) && (y_pos[key] == 3 || y_pos[current] == 3)) {
+            candidate.push_back(Dirpad::A);
+        } else {
+            std::sort(candidate.begin(), candidate.end(), std::greater());
+            candidate.push_back(Dirpad::A);
+            auto size1 = expand(expand(candidate)).size();
+            candidate.pop_back();
+            std::sort(candidate.begin(), candidate.end(), std::less());
+            candidate.push_back(Dirpad::A);
+            auto size2 = expand(expand(candidate)).size();
+
+            if (size1 < size2) {
+                candidate.pop_back();
+                std::sort(candidate.begin(), candidate.end(), std::greater());
+                candidate.push_back(Dirpad::A);
+            }
+        }
+
+        stage1.insert(stage1.end(), candidate.begin(), candidate.end());
+
+        current = key;
+    }
+
+    /** /
+    for(const auto d: stage1) {
+        std::cout << dirpad_lookup[d];
+    }
+    std::cout << std::endl;
+    //*/
+    
+    auto stage2 = expand(stage1);
+    /** /
+    for(const auto d: stage2) {
+        std::cout << dirpad_lookup[d];
+    }
+    std::cout << std::endl;
+    //*/
+    auto stage3 = expand(stage2);
+    
+    /** /
+    for(const auto d: stage3) {
+        std::cout << dirpad_lookup[d];
+    }
+    std::cout << std::endl;
+    // */
+
+    return stage3.size();
+}
 
 uint64_t Input::score_codes() const {
     uint64_t result = 0;
 
     for(auto &code:codes) {
         auto dist = shortest_input(code);
-        std::cout << dist << std::endl;
+        //std::cout << dist << std::endl;
         result += dist * (code[0] * 100 + code[1] * 10 + code[2]);
     }
 
