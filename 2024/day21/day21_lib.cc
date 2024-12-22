@@ -169,7 +169,40 @@ uint64_t count_expanded(const std::vector<Dirpad> & input, int depth) {
         std::sort(sequence.begin(), sequence.end(), std::less<Dirpad>());
 
         uint64_t best = std::numeric_limits<uint64_t>::max();
+        //int iter = 0;
         do {
+            //std::cout << depth << ":" << iter++ << std::endl;
+            if ((x_pos[d] == 0 || x_pos[current] == 0) && (y_pos[d] == 0 || y_pos[current] == 0)) {
+                // can't go to 0,0
+                bool valid = true;
+                int x = x_pos[current];
+                int y = y_pos[current];
+                for(const auto d: sequence) {
+                    switch(d) {
+                    case Dirpad::Left:
+                        x--;
+                        break;
+                    case Dirpad::Right:
+                        x++;
+                        break;
+                    case Dirpad::Up:
+                        y--;
+                        break;
+                    case Dirpad::Down:
+                        y++;
+                        break;
+                    default:
+                        break;
+                    }
+                    if (x == 0 && y == 0) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (!valid) {
+                    continue;
+                }
+            }
             sequence.push_back(Dirpad::A);
             best = std::min(best, count_expanded(sequence,depth-1));
             sequence.pop_back();
@@ -355,14 +388,16 @@ uint64_t count_shortest_input(const std::vector<unsigned char> &code, int depth)
             }
             candidate.push_back(Dirpad::A);
 
+            /** /
             for(auto c: candidate) {
                 std::cout << dirpad_lookup[c];
             }
             std::cout << std::endl;
+            //*/
             current_best = std::min(current_best, count_expanded(candidate,depth));
             candidate.pop_back();
         } while(std::next_permutation(candidate.begin(), candidate.end()));
-        std::cout << "->" << current_best << std::endl;
+        //std::cout << "->" << current_best << std::endl;
 
         result += current_best;
 

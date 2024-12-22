@@ -9,6 +9,8 @@ class Input {
     uint64_t score_codes() const;
     uint64_t score_codes2(int depth) const;
 
+    //uint64_t count_shortest_input(std::vector<unsigned char>)
+
     private:
 
     std::vector<std::vector<unsigned char>> codes;
