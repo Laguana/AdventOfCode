@@ -36,12 +36,25 @@ int part1_works() {
     return 0;
 }
 
+int example_works_for_part2() {
+    auto parsed = Input::parse((const unsigned char*)example.c_str(), example.size());
+    auto result = parsed.score_codes2(2);
+    if (result != 126384) {
+        std::cout << "Expected 126384 but got " << result << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
 int main() {
     int failures = 0;
 
     failures += parsing_works();
 
     failures += example_works();
+
+    failures += part1_works();
+    failures += example_works_for_part2();
 
     if (failures > 0) {
         std::cout << "Encountered " << failures << " failures!" << std::endl;

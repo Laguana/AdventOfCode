@@ -4,6 +4,7 @@
 #include <utility>
 #include <algorithm>
 #include <unordered_map>
+#include <limits>
 
 Input Input::parse(const unsigned char* start, std::size_t len) {
     auto end = start+len;
@@ -45,153 +46,6 @@ Input Input::parse(const unsigned char* start, std::size_t len) {
 +---+---+---+
 */
 
-std::unordered_map<int,uint64_t> dirpad_memo;
-
-uint64_t dirpad_shortest(int button, int depth) {
-    if (depth == 0) {
-        // you can push any button yourself by just pushing the button
-        std::cout << "(" << "X^A<v>"[button] <<  ")";
-        return 1;
-    }
-
-    int key = button <<4 | depth;
-
-    if (dirpad_memo.contains(key)) {
-        std::cout << depth << "X^A<v>"[button];
-        return dirpad_memo[key];
-    }
-
-    // to push button  0 1 2
-    //                 3 4 5
-    // assuming you start at the A / 2, you need to do the following:
-    
-    int answer = -1;
-
-    switch(button) {
-    case 2:
-        // to push button A when you're pointing at A, just push it
-        answer = dirpad_shortest(2, depth-1);
-        dirpad_memo[key] = answer;
-        return answer;
-    case 1:
-        // to push 1, go left and hit A
-        answer = dirpad_shortest(3, depth-1) + dirpad_shortest(2, depth-1);
-        dirpad_memo[key] = answer;
-        return answer;
-    case 5:
-        // to push 5, go down and hit A
-        answer = dirpad_shortest(4, depth-1) + dirpad_shortest(2, depth-1);
-        dirpad_memo[key] = answer;
-        return answer;
-    case 4:
-        // to push 4, go down then left and hit A
-        answer = dirpad_shortest(4, depth-1) + dirpad_shortest(3, depth-1) + dirpad_shortest(2, depth-1);
-        dirpad_memo[key] = answer;
-        return answer;
-    case 3:
-        // to push 3, go down then left twice and hit A
-        // note that the second left is just a single extra press
-        answer = dirpad_shortest(4, depth-1) + dirpad_shortest(3, depth-1)+ 1 + dirpad_shortest(2, depth-1);
-        dirpad_memo[key] = answer;
-        return answer;
-    default:
-        std::unreachable();
-    }
-
-}
-
-/*
-uint64_t shortest_input(const std::vector<unsigned char> &code) {
-    // On each keypad, we are doing a circuit from A to a list of targets and back to A
-    // to be maximally fast we want as much repetition in directions as possible
-
-    uint64_t result = 0;
-
-    // numpad positions
-    const std::vector<int> x_pos = {1,0,1,2,0,1,2,0,1,2,2};
-    const std::vector<int> y_pos = {3,2,2,2,1,1,1,0,0,0,3};
-
-    // The shortest input on the numpad will be
-    // up A left B to first number, A,
-    // up/down C left/right D to next number, A
-    // up/down E left/right F to next number, A
-    // right G down E to A
-
-    unsigned char current_key = 10;
-
-    for(auto key: code) {
-        auto dx = x_pos[key]-x_pos[current_key];
-        auto dy = y_pos[key]-y_pos[current_key];
-
-        // first robot wants to go dy up/down and dx left/right, then A
-        // but not necessarily in that order; we need to avoid the blank at 0,3
-
-        if (dx > 0 ) {
-            // go right first
-            result += dirpad_shortest(4,2); 
-            result += dirpad_shortest(2,2);
-            result += dx-1; // if we step more than once, just keep hitting a
-
-            // go up or down
-            if (dy < 0) {
-                result += dirpad_shortest(4,2);
-                result += dirpad_shortest(3,2);
-                result += dirpad_shortest(2,2);
-                result += std::abs(dy)-1;
-                result += dirpad_shortest(5,2);
-                result += dirpad_shortest(2,2);
-            } else if (dy > 0) {
-                result += dirpad_shortest(3,2);
-                result += dirpad_shortest(2,2);
-                result += std::abs(dy)-1;
-                result += dirpad_shortest(5,2);
-            }
-        } else {
-            // go up/down first, and then maybe left if dx < 0
-            if (dy > 0) {
-                result += dirpad_shortest(3,2);
-                result += dirpad_shortest(2,2);
-                result += std::abs(dy)-1;
-
-                if (dx < 0) {
-                    result += dirpad_shortest(4,2);
-                    result += dirpad_shortest(3,2);
-                    result += dirpad_shortest(2,2);
-                    result += std::abs(dx-1);
-                    result += dirpad_shortest(5,2);
-                    result += 1;
-                    result += dirpad_shortest(1,2);
-                } else {
-                    result += dirpad_shortest(5,2);
-                }
-            } else if (dy < 0) {
-                result += dirpad_shortest(3,2);
-                result += dirpad_shortest(4,2);
-                result += dirpad_shortest(2,2);
-                result += std::abs(dy)-1;
-                if (dx < 0) {
-                    result += dirpad_shortest(3,2);
-                    result += dirpad_shortest(2,2);
-                    result += std::abs(dx-1);
-                    result += dirpad_shortest(5,2);
-                    result += 1;
-                    result += dirpad_shortest(1,2);
-                } else {
-                    result += dirpad_shortest(5,2);
-                    result += dirpad_shortest(1,2);
-                }
-            }
-        }
-
-        // hit A
-        result += dirpad_shortest(2,1);
-    }
-    std::cout << std::endl;
-
-    
-    return result;
-}
-*/
 enum Dirpad: unsigned char {
     Up,
     Down,
@@ -239,10 +93,101 @@ std::vector<Dirpad> expand(const std::vector<Dirpad> & input) {
     return result;
 }
 
+template<class T,  class U>
+struct std::hash<std::pair<T, U>>
+{
+    std::size_t operator()(const std::pair<T,U>& s) const noexcept
+    {
+        std::size_t h1 = std::hash<T>{}(s.first);
+        std::size_t h2 = std::hash<U>{}(s.second);
+        return h1 ^ (h2 << 8);
+    }
+};
+
+std::unordered_map<std::pair<uint64_t, int>,uint64_t> dirpad_memo = {};
+
+uint64_t count_expanded(const std::vector<Dirpad> & input, int depth) {
+    if (depth == 0) {
+        return input.size();
+    }
+    uint64_t key1 = 0;
+    for(auto d : input) {
+        key1 <<=3;
+        key1 |= d+1;
+    }
+    std::pair<uint64_t, int> key(key1, depth);
+    /*
+    std::cout << "++" << depth << ":";
+    for(auto i:input) {
+        std::cout << dirpad_lookup[i];
+    }
+    */
+    if(dirpad_memo.contains(key)) {
+        /*std::cout << std::oct << key.first << "~" << dirpad_memo.find(key)->first.first << std::dec;
+        if (dirpad_memo.find(key)->first != key) {
+            std::cout << "????" << std::endl;
+        }
+        std::cout << "=" << dirpad_memo[key] << std::endl;
+        */
+        return dirpad_memo[key];
+    } else {
+        //std::cout << "= ??" << std::endl;
+    }
+
+    static const std::vector<int> x_pos {1,1,2,0,2};
+    static const std::vector<int> y_pos {0,1,0,1,1};
+
+    Dirpad current = Dirpad::A;
+
+    uint64_t result = 0;
+
+    for(auto d: input) {
+        int dx = x_pos[d]-x_pos[current];
+        int dy = y_pos[d]-y_pos[current];
+
+        std::vector<Dirpad> sequence;
+
+        // prefer right, down, up, left;
+        while(dx > 0) {
+            sequence.push_back(Dirpad::Right);
+            --dx;
+        }
+        while(dy > 0) {
+            sequence.push_back(Dirpad::Down);
+            --dy;
+        }
+        
+        while(dx < 0) {
+            sequence.push_back(Dirpad::Left);
+            ++dx;
+        }
+        while(dy < 0) {
+            sequence.push_back(Dirpad::Up);
+            ++dy;
+        }
+
+        std::sort(sequence.begin(), sequence.end(), std::less<Dirpad>());
+
+        uint64_t best = std::numeric_limits<uint64_t>::max();
+        do {
+            sequence.push_back(Dirpad::A);
+            best = std::min(best, count_expanded(sequence,depth-1));
+            sequence.pop_back();
+        } while(std::next_permutation(sequence.begin(), sequence.end()));
+
+        result += best;
+        current = d;
+    }    
+
+    //std::cout << "==" << depth << "=" << result << std::endl;
+    dirpad_memo[key] = result;
+    return result;
+}
+
 uint64_t shortest_input(const std::vector<unsigned char> &code) {
 
-    const std::vector<int> x_pos = {1,0,1,2,0,1,2,0,1,2,2};
-    const std::vector<int> y_pos = {3,2,2,2,1,1,1,0,0,0,3};
+    static const std::vector<int> x_pos = {1,0,1,2,0,1,2,0,1,2,2};
+    static const std::vector<int> y_pos = {3,2,2,2,1,1,1,0,0,0,3};
 
     unsigned char current = 10;
 
@@ -293,6 +238,8 @@ uint64_t shortest_input(const std::vector<unsigned char> &code) {
             }
         }
 
+        //std::cout << expand(expand(candidate)).size() << " =?= " << count_expanded(candidate,2) << std::endl;
+
         stage1.insert(stage1.end(), candidate.begin(), candidate.end());
 
         current = key;
@@ -310,7 +257,7 @@ uint64_t shortest_input(const std::vector<unsigned char> &code) {
     for(const auto d: stage2) {
         std::cout << dirpad_lookup[d];
     }
-    std::cout << std::endl;
+    std::cout << ": " << stage2.size() << " ?= " << count_expanded(stage1, 1) << std::endl;
     //*/
     auto stage3 = expand(stage2);
     
@@ -318,8 +265,8 @@ uint64_t shortest_input(const std::vector<unsigned char> &code) {
     for(const auto d: stage3) {
         std::cout << dirpad_lookup[d];
     }
-    std::cout << std::endl;
-    // */
+    std::cout << ": " << stage3.size() << " ?= " << count_expanded(stage2, 1) << " ?= " << count_expanded(stage1, 2) << std::endl;
+    //*/
 
     return stage3.size();
 }
@@ -329,6 +276,106 @@ uint64_t Input::score_codes() const {
 
     for(auto &code:codes) {
         auto dist = shortest_input(code);
+        //std::cout << dist << std::endl;
+        result += dist * (code[0] * 100 + code[1] * 10 + code[2]);
+    }
+
+    return result;
+}
+
+uint64_t count_shortest_input(const std::vector<unsigned char> &code, int depth) {
+
+    static const std::vector<int> x_pos = {1,0,1,2,0,1,2,0,1,2,2};
+    static const std::vector<int> y_pos = {3,2,2,2,1,1,1,0,0,0,3};
+
+    unsigned char current = 10;
+
+    uint64_t result = 0;;
+
+    for(auto key: code) {
+        int dx = x_pos[key]-x_pos[current];
+        int dy = y_pos[key]-y_pos[current];
+
+        // prefer right first, then up/down, then left
+        // actually not always best??
+        // <<^^ encode shorter than ^^<<
+
+        std::vector<Dirpad> candidate;
+        
+        while(dx > 0) {
+            candidate.push_back(Dirpad::Right);
+            --dx;
+        }
+        while(dy > 0) {
+            candidate.push_back(Dirpad::Down);
+            --dy;
+        }
+        while(dy < 0) {
+            candidate.push_back(Dirpad::Up);
+            ++dy;
+        }
+        while(dx < 0) {
+            candidate.push_back(Dirpad::Left);
+            ++dx;
+        }
+
+        uint64_t current_best = std::numeric_limits<uint64_t>::max();
+
+        std::sort(candidate.begin(), candidate.end(), std::less<Dirpad>());
+        do {
+            if ((x_pos[key] == 0 || x_pos[current] == 0) && (y_pos[key] == 3 || y_pos[current] == 3)) {
+                bool valid = true;
+                int x = x_pos[current];
+                int y = y_pos[current];
+                for(const auto d: candidate) {
+                    switch(d) {
+                    case Dirpad::Left:
+                        x--;
+                        break;
+                    case Dirpad::Right:
+                        x++;
+                        break;
+                    case Dirpad::Up:
+                        y--;
+                        break;
+                    case Dirpad::Down:
+                        y++;
+                        break;
+                    default:
+                        break;
+                    }
+                    if (x == 0 && y == 3) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (!valid) {
+                    continue;
+                }
+            }
+            candidate.push_back(Dirpad::A);
+
+            for(auto c: candidate) {
+                std::cout << dirpad_lookup[c];
+            }
+            std::cout << std::endl;
+            current_best = std::min(current_best, count_expanded(candidate,depth));
+            candidate.pop_back();
+        } while(std::next_permutation(candidate.begin(), candidate.end()));
+        std::cout << "->" << current_best << std::endl;
+
+        result += current_best;
+
+        current = key;
+    }
+    return result;
+}
+
+uint64_t Input::score_codes2(int depth) const {
+    uint64_t result = 0;
+
+    for(auto &code:codes) {
+        auto dist = count_shortest_input(code, depth);
         //std::cout << dist << std::endl;
         result += dist * (code[0] * 100 + code[1] * 10 + code[2]);
     }

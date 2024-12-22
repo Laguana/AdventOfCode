@@ -7,6 +7,7 @@ class Input {
     static Input parse(const unsigned char* start, std::size_t len);
 
     uint64_t score_codes() const;
+    uint64_t score_codes2(int depth) const;
 
     private:
 
