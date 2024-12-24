@@ -40,6 +40,8 @@ class Input {
 
     uint64_t get_z_number() const;
 
+    std::string get_swapped_wires() const;
+
     private:
     static uint32_t key_from_string(const std::string_view & s);
 

@@ -123,3 +123,92 @@ uint64_t Input::get_z_number() const {
 
     return z_number;
 }
+
+std::string Input::get_swapped_wires() const {
+    // work forwards? see what wires z00 depends on, then move forwards in the expected way?
+    // work backwards and try to automatically disassemble the input?
+
+    // or... just do it myself?
+
+    // dsr is the carry of x00+y00
+    // hqh is the carry of x01+y01
+    // nmk is x01+y01 ignoring carry of x00+y00
+
+    // in fact, xAA AND yAA -> the immediate carry  iAA
+    //          XAA XOR yAA -> the sum ignoring carry
+    // so if we find all the carries, and all the sums, we should see
+    // xN AND yN -> iN
+    // xN XOR yN -> sN [for N = 0 sN = z00]
+    // cN-1 AND sN -> dN for carry caused by lower carry
+    // iN OR dN -> cN [for N = 0, cN = iN]
+    // sN XOR cN-1 -> zN [for N > 0]
+
+    // it's simple enough to walk through doing this, but how do you detect issues?
+    // I ended up doing it by hand, and it looks likle if you get a zN where you expected
+    // an intermediate result (or vice versa; a non zN where you should have had one) then
+    // it's clearly wrong, and you can work out where the zn should be by finding the relevant iN/sN to sub in
+    // Also because inputs are never wrong, 
+    // you know that a OR b must be computing a cN from iN and dN,
+    // a AND b is either computing iN if it is x/y or dN otherwise and its inputs are cN-1 and sN
+    // a XOR b is intended to compute sN if it is x/y, or it is computing zN from sN and cN-1
+    // whenever there was a discrepancy, this let me (manually) identify the necessary swaps
+
+    std::unordered_map<uint64_t, std::vector<Operation>> keyed_operations;
+    for(auto &op: operations) {
+        keyed_operations[op.in1].push_back(op);
+        keyed_operations[op.in2].push_back(op);
+    }
+
+    uint64_t carries[max_z+1] = {0};
+    uint64_t immediate_carries[max_z+1] = {0};
+    uint64_t sums[max_z+1] = {0};
+    uint64_t lower_carry[max_z+1] = {0};
+
+    std::vector<std::pair<uint64_t, uint64_t>> swaps;
+
+    char x_string[3] = {'x','0','0'};
+    char y_string[3] = {'y','0','0'};
+    char z_string[3] = {'z','0','0'};
+    for(uint64_t i = 0; i <= max_z; ++i) {
+        x_string[1] = '0' + i/10;
+        x_string[2] = '0' + (i%10);
+        auto x_key = key_from_string(std::string_view(x_string, 3));
+        y_string[1] = '0' + i/10;
+        y_string[2] = '0' + (i%10);
+        auto y_key = key_from_string(std::string_view(y_string, 3));
+        
+        auto x_operations = keyed_operations[x_key];
+        for(const auto &op : x_operations) {
+            if (op.op == Op::AND) {
+                if ((op.in1 == x_key && op.in2 == y_key) ||
+                    (op.in1 == y_key && op.in2 == x_key)) {
+                    sums[i] = op.out;
+                    if (i == 0) {
+                        carries[i] = op.out;
+                    }
+                } else {
+                    std::cout << "Invalid structure" << std::endl;
+                    std::abort();
+                }
+            } else if (op.op == Op::XOR) {
+                if ((op.in1 == x_key && op.in2 == y_key) ||
+                    (op.in1 == y_key && op.in2 == x_key)) {
+                    immediate_carries[i] = op.out;
+                    if (i == 0) {
+                        carries[i] = op.out;
+                    }
+                } else {
+                    std::cout << "Invalid structure" << std::endl;
+                    std::abort();
+                }
+            }
+        }
+
+        if (i > 0) {
+
+        }
+
+    }
+
+    return "";
+}
