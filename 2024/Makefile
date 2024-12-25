@@ -248,11 +248,21 @@ day24/day24_test: day24/day24_test.o day24/day24_lib.o
 
 day24: day24/day24 day24/day24_test
 
+day25/day25.o: day25/day25.cc day25/day25.in.h day25/day25_lib.h
+
+day25/day25: day25/day25.o day25/day25_lib.o
+
+day25/day25_test.o: day25/day25_test.cc day25/day25.in.h day25/day25_lib.h
+
+day25/day25_test: day25/day25_test.o day25/day25_lib.o
+
+day25: day25/day25 day25/day25_test
+
 
 .PHONY: all day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 \
 	day11 day12 day13 day14 day15 day16 day17 day18 day19 day20 \
-	day21 day22 day23 day24
+	day21 day22 day23 day24 day25
 
 all: day1 day2 day3 day4 day5 day6 day7 day8 day9 day10 \
 	day11 day12 day13 day14 day15 day16 day17 day18 day19 day20 \
-	day21 day22 day23 day24
+	day21 day22 day23 day24 day25
