@@ -140,8 +140,8 @@ std::string Input::get_swapped_wires() const {
     // xN AND yN -> iN
     // xN XOR yN -> sN [for N = 0 sN = z00]
     // cN-1 AND sN -> dN for carry caused by lower carry
+    // cN-1 XOR sn -> zN [for N > 0]
     // iN OR dN -> cN [for N = 0, cN = iN]
-    // sN XOR cN-1 -> zN [for N > 0]
 
     // it's simple enough to walk through doing this, but how do you detect issues?
     // I ended up doing it by hand, and it looks likle if you get a zN where you expected
@@ -182,7 +182,7 @@ std::string Input::get_swapped_wires() const {
             if (op.op == Op::AND) {
                 if ((op.in1 == x_key && op.in2 == y_key) ||
                     (op.in1 == y_key && op.in2 == x_key)) {
-                    sums[i] = op.out;
+                    immediate_carries[i] = op.out;
                     if (i == 0) {
                         carries[i] = op.out;
                     }
@@ -193,10 +193,7 @@ std::string Input::get_swapped_wires() const {
             } else if (op.op == Op::XOR) {
                 if ((op.in1 == x_key && op.in2 == y_key) ||
                     (op.in1 == y_key && op.in2 == x_key)) {
-                    immediate_carries[i] = op.out;
-                    if (i == 0) {
-                        carries[i] = op.out;
-                    }
+                    sums[i] = op.out;
                 } else {
                     std::cout << "Invalid structure" << std::endl;
                     std::abort();
@@ -204,8 +201,57 @@ std::string Input::get_swapped_wires() const {
             }
         }
 
-        if (i > 0) {
+        if (i == 0) {
+            continue;
+        }
 
+        // we have filled in immediate_carries, sums, lower_carry, carry up through i-1,
+        // and immediate_carries, sums through i although possibly incorrect until used
+        // find lower_carry and carry for i
+        // and verify that the sum XOR is correct
+
+        // incidentally all issues are within one stage so 🤷
+
+        // cN-1 AND sN -> dN for carry caused by lower carry
+        // cN-1 XOR sn -> zN [for N > 0]
+        // iN OR dN -> cN [for N = 0, cN = iN]
+
+        // First, ensure that cN-1 XOR sN -> zN
+
+        // this feels very hard to generalize; i can see this working for this specific input but
+        // a few clustered failures make this very difficult.
+
+        auto &sn_operations = keyed_operations[sums[i]];
+        if (sn_operations.size() != 2) {
+            // sums[i] is wrong
+            // but... this didn't happen >.>
+        }
+        Operation xorop, andop;
+        if (sn_operations[0].op == Op::XOR) {
+            xorop = sn_operations[0];
+            andop = sn_operations[1];
+        } else {
+            xorop = sn_operations[1];
+            andop = sn_operations[0];
+        }
+        z_string[1] = '0' + i/10;
+        z_string[2] = '0' + (i%10);
+        auto z_key = key_from_string(std::string_view(z_string, 3));
+
+        if (xorop.out != z_key) {
+            // wrong output here
+            swaps.emplace_back(z_key, xorop.out);
+            auto &xorout_ops = keyed_operations[xorop.out];
+            if (immediate_carries[i] == z_key) {
+                immediate_carries[i] = xorop.out;
+            } else if (andop.out == z_key) {
+                lower_carry[i] = xorop.out;
+            } else {
+                if (xorout_ops.size() == 1) {
+                    // must be the OR for carry
+                    // so either the immediate carry or the lower carry
+                }
+            }
         }
 
     }

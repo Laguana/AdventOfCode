@@ -31,6 +31,8 @@ struct Operation {
 
     Operation(uint32_t in1, uint32_t in2, uint32_t out, Op op):
         in1(in1), in2(in2), out(out), op(op) {}
+    
+    Operation() {};
 };
 
 class Input {
