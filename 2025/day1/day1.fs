@@ -37,7 +37,7 @@ Create day-1-buf 5 allot
         if
             swap 1+ swap ( update #0 )
         endif
-        dup .
+        \ dup .
     repeat
         drop drop
         ( #0 )
@@ -75,7 +75,7 @@ Create day-1-buf 5 allot
             abort" Failed conversion"
         endif
         drop
-        dup .
+        \ dup .
         ( pos change )
         over 0= -rot
         ( was0 pos change)
@@ -85,7 +85,7 @@ Create day-1-buf 5 allot
         \ The problem is when we go negative, it is not correct if we land on a
         \ multiple of 100 or if we were already on 0
         ( was0 newpos #full_rotations)
-        rot over 0<
+        rot day-1-buf c@ '-' =
         if
             ( We are going negative )
             if
@@ -103,7 +103,8 @@ Create day-1-buf 5 allot
         endif
         ( newpos )
         abs r> + >r
-        r> swap 2dup . .
+        r> swap
+        \ 2dup . .
     repeat
         drop drop
         ( #0 )
@@ -113,7 +114,7 @@ Create day-1-buf 5 allot
 : test-day-1-part-1
   s" day1.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-1-part-1 .
+  r@ day-1-part-1 assert( 3 = )
   r>
   close-file throw
 ;
@@ -130,12 +131,12 @@ Create day-1-buf 5 allot
 : test-day-1-part-2
   s" day1.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-1-part-2 .
+  r@ day-1-part-2 assert( 6 = )
   r>
   close-file throw
 ;
 
-( Expects to print < 6357, != 5761, != 5846 )
+( Expects to print 6289 )
 : do-day-1-part-2 
   s" day1.in" r/o open-file throw ( -- fd )
   >r
