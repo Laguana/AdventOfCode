@@ -81,15 +81,28 @@ Create day-1-buf 5 allot
         ( was0 pos change)
         +
         100 /mod
+        \ In most cases, the div part of /mod will be the number of times we cross 0
+        \ The problem is when we go negative, it is not correct if we land on a
+        \ multiple of 100 or if we were already on 0
         ( was0 newpos #full_rotations)
-        abs r> + >r
-        ( was0 newpos )
-        dup 0= rot and
-        ( newpos was0&is0 )
+        rot over 0<
         if
-            r> 1+ >r
+            ( We are going negative )
+            if
+                ( We were 0 previously )
+                ( 0 to -1/99 shouldn't count)
+                1+
+            endif
+            over 0= if
+                ( We landed on an exact multiple )
+                ( so we need to count extra )
+                1-
+            endif
+        else
+            drop
         endif
-        ( pos )
+        ( newpos )
+        abs r> + >r
         r> swap 2dup . .
     repeat
         drop drop
@@ -122,7 +135,7 @@ Create day-1-buf 5 allot
   close-file throw
 ;
 
-( Expects to print < 6357 )
+( Expects to print < 6357, != 5761, != 5846 )
 : do-day-1-part-2 
   s" day1.in" r/o open-file throw ( -- fd )
   >r
