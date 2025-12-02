@@ -106,8 +106,8 @@ Create day-1-buf 5 allot
         r> swap
         \ 2dup . .
     repeat
-        drop drop
-        ( #0 )
+    drop drop
+    ( #0 )
     r> drop
 ;
 
