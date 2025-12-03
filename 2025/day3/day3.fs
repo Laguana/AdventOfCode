@@ -41,6 +41,23 @@ Create day-3-buf 1024 allot
     nip +
 ;
 
+
+: best-joltage-2 { buf start end -- joltage }
+    buf start end 11 -
+    max-in-buf
+    ( idx max )
+    11 0 ?do
+        10 *
+        ( idx acc)
+        buf rot 1+ end 10 i - -
+        max-in-buf
+        ( acc idx max )
+        rot +
+        ( idx acc )
+    loop
+    nip
+;
+
 : day-3-part-1 ( fd -- answer ) 
     >r
     0
@@ -55,7 +72,19 @@ Create day-3-buf 1024 allot
     r> drop
 ;
 
-: day-3-part-2 0 ;
+: day-3-part-2 ( fd -- answer ) 
+    >r
+    0
+    begin
+        day-3-buf 1024 r@
+        read-line throw ( acc #read !eof )
+    while
+        day-3-buf 0 rot best-joltage-2 +
+        ( acc )
+    repeat
+    drop 
+    r> drop
+;
 
 : test-day-3-part-1
   s" day3.example" r/o open-file throw ( -- fd )
@@ -77,12 +106,12 @@ Create day-3-buf 1024 allot
 : test-day-3-part-2
   s" day3.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-3-part-2  . \ assert( 4174379265 = )
+  r@ day-3-part-2   assert( 3121910778619 = )
   r>
   close-file throw
 ;
 
-( Expect to get ? )
+( Expect to get 173685428989126 )
 : do-day-3-part-2
   s" day3.in" r/o open-file throw ( -- fd )
   >r
