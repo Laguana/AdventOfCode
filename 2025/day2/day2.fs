@@ -298,7 +298,7 @@
 : test-day-2-part-1
   s" day2.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-2-part-1  . \ assert( 1227775554 = )
+  r@ day-2-part-1  assert( 1227775554 = )
   r>
   close-file throw
 ;
@@ -315,7 +315,7 @@
 : test-day-2-part-2
   s" day2.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-2-part-2  . \ assert( 4174379265 = )
+  r@ day-2-part-2  assert( 4174379265 = )
   r>
   close-file throw
 ;
