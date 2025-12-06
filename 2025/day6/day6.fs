@@ -3,6 +3,7 @@ CREATE day-6-buf day-6-buf-size allot
 VARIABLE day-6-num-columns
 VARIABLE day-6-data
 VARIABLE day-6-num-rows
+VARIABLE day-6-row-chars
 
 : is-digit? ( c -- digit? )
     dup '0' >= swap '9' <= and \ =
@@ -57,12 +58,14 @@ VARIABLE day-6-num-rows
     swap day-6-num-columns !
     ( ptr )
     1+
+    dup day-6-buf -
+    day-6-row-chars !
     1 swap
     ( #rows ptr )
     begin
         find-next-number if 1+ find-next-number drop endif
         dup c@ is-digit?
-        over c@ . S" Rows after 1" type .S cr
+        \ over c@ . S" Rows after 1" type .S cr
     while
         swap 1+ swap
         read-one-row
@@ -87,7 +90,7 @@ VARIABLE day-6-num-rows
     day-6-num-rows @ 0 DO
         ( acc ptr )
         dup @ rot 
-        S" mul" type .S cr 
+        \ S" mul" type .S cr 
         * swap
         day-6-num-columns @ cells +
     LOOP
@@ -107,15 +110,77 @@ VARIABLE day-6-num-rows
         else
             i mul-column
         endif
-        S" column " type i . .S cr
+        \ S" column " type i . .S cr
         rot + swap
         1+ 
     LOOP
     drop
 ;
 
+: read-column-number ( col -- num )
+  -1 swap day-6-row-chars @ mod
+  ( acc col )
+  \ S" read-column-number" type .S cr
+  day-6-num-rows @ 0 DO
+    dup i day-6-row-chars @ * + day-6-buf + c@
+    ( acc col c )
+    dup is-digit? if
+        '0' - rot 
+        dup 0< if drop 0 endif
+        10 * + swap
+    else
+        drop
+    endif
+  LOOP
+  \ S" end read-column-number" type .S cr
+  drop
+;
+
+: add-columns-2 ( charidx maxidx -- answer )
+    0 -rot swap 
+    \ S" add-columns" type .S cr key drop 
+    DO
+        i read-column-number 
+        \ S" add-columns loop" type .S cr 
+        dup 0< if drop 0 endif +
+    LOOP
+;
+: mul-columns-2 ( charidx maxidx -- answer )
+    1 -rot swap
+    \ S" mul-columns" type .S cr key drop 
+    DO
+        i read-column-number
+        \ S" mul-columns loop" type .S cr
+        dup 0< if drop 1 endif *
+    LOOP
+;
+
 : day-6-part-2 ( fd -- answer )
-    drop 0
+    parse-input
+
+    0 swap
+    day-6-num-columns @ 0 DO
+        ( acc ptr )
+        \ so this nonsense downward reading, the op is always in the leftmost spot
+        \ both operations are associative, so we can go left to right anyway
+        dup 1+ find-next-number drop
+        ( acc ptr nextptr )
+        dup -rot
+        ( acc nextptr ptr nextptr)
+        over c@ -rot
+        day-6-buf - swap day-6-buf - swap
+        ( acc nextptr c idx1 idx2 )
+        \ S" main loop" type .S cr key drop
+        rot '+' = if
+            add-columns-2
+        else
+            mul-columns-2
+        endif
+        ( acc nextptr answer)
+        rot + swap
+        ( acc nextptr )
+    LOOP
+    drop
 ;
 
 : test-day-6-part-1
@@ -138,12 +203,12 @@ VARIABLE day-6-num-rows
 : test-day-6-part-2
   s" day6.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-6-part-2 . \ assert( 0 = )
+  r@ day-6-part-2  assert( 3263827 = )
   r>
   close-file throw
 ;
 
-( Expect to get ? )
+( Expect to get 9876636978528 )
 : do-day-6-part-2
   s" day6.in" r/o open-file throw ( -- fd )
   >r
