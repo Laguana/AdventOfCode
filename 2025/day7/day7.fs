@@ -114,7 +114,7 @@ VARIABLE day-7-timelines
     \ Still can go row by row
     HERE day-7-timelines !
     day-7-line-width @ 2 * cells allot
-    0 this-timeline-ptr day-7-line-width @ 2 * erase
+    0 this-timeline-ptr day-7-line-width @ 2 * cells  erase
 
     \ day-7-timelines is a next+prev buffer
     \ start with 1 timeline at the start

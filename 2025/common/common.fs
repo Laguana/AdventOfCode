@@ -29,3 +29,6 @@
 : min ( a b -- c )
     2dup > if nip else drop endif
 ;
+: umin ( a b -- c )
+    2dup u> if nip else drop endif
+;
