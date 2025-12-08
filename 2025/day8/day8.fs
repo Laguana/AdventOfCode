@@ -6,7 +6,6 @@ VARIABLE day-8-junction-boxes
 VARIABLE day-8-junction-count
 VARIABLE day-8-circuit-count
 0 day-8-circuit-count !
-VARIABLE day-8-sizes
 VARIABLE day-8-pair-connected
 
 struct
@@ -168,8 +167,8 @@ end-struct junction-box%
 ;
 
 : sum-biggest-3 ( -- answer )
-    HERE day-8-sizes ! day-8-circuit-count @ cells allot
-    day-8-sizes @ day-8-circuit-count @ cells erase
+    day-8-circuit-count @ cells dup allocate throw { sizes-table-size sizes-table }
+    sizes-table sizes-table-size erase
 
     S" Adding sizes" type .S cr
     day-8-junction-count @ 0 do
@@ -178,7 +177,7 @@ end-struct junction-box%
         junction-circuit @
         ( i-circuit )
          dup 0 <> if
-            1- cells day-8-sizes + 1 swap +!
+            1- cells sizes-table + 1 swap +!
         else
             drop
         endif
@@ -192,7 +191,7 @@ end-struct junction-box%
         -1 0
         ( acc idx max )
         day-8-circuit-count @ 0 do
-            day-8-sizes i cells + @
+            sizes-table i cells + @
             2dup < if
                 ( acc idx oldmax newmax)
                 nip nip i swap
@@ -201,8 +200,10 @@ end-struct junction-box%
             endif
         loop
         S" Max iteration" type .S cr
-        rot * swap cells day-8-sizes + 0 swap !
+        rot * swap cells sizes-table + 0 swap !
     loop
+
+    sizes-table free throw
 ;
 
 
@@ -225,7 +226,7 @@ end-struct junction-box%
   close-file throw
 ;
 
-( Expect to get ? )
+( Expect to get 330786 )
 : do-day-8-part-1
   s" day8.in" r/o open-file throw ( -- fd )
   >r
