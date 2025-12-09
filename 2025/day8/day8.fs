@@ -151,7 +151,7 @@ end-struct distance-entry%
 ;
 
 : swap-distances { l r -- }
-    ." swap-distances" l r .S 2drop cr key drop
+    \ ." swap-distances" l r .S 2drop cr key drop
     l idx->distance
     dup dup dup
     distance-entry-i @ rot
@@ -170,12 +170,12 @@ end-struct distance-entry%
 ;
 
 : distance-smaller ( i j -- i<=j )
-    ." Distance smaller" .S cr
+    \ ." Distance smaller" .S cr
     idx->distance distance-entry-distance @
     swap
     idx->distance distance-entry-distance @
     ( jdist idist )
-    ." -Distance smaller" .S cr
+    \ ." -Distance smaller" .S cr
     >=
 ;
 
@@ -192,9 +192,9 @@ end-struct distance-entry%
         swap distance-entry-j @
 
         ( i j )
-        ." assign-circuits pair " .S cr
-         2dup junction-ptr print-junction cr junction-ptr print-junction cr
-         2dup junction-ptr swap junction-ptr junction-sq-distance . cr
+        \ ." assign-circuits pair " .S cr
+        \ 2dup junction-ptr print-junction cr junction-ptr print-junction cr
+        \ 2dup junction-ptr swap junction-ptr junction-sq-distance . cr
 
         2dup junction-ptr junction-circuit @ swap junction-ptr junction-circuit @ dup 0= -rot <> or if
             connect-junctions
@@ -208,7 +208,7 @@ end-struct distance-entry%
     day-8-circuit-count @ cells dup allocate throw { sizes-table-size sizes-table }
     sizes-table sizes-table-size erase
 
-    S" Adding sizes" type .S cr
+    \ S" Adding sizes" type .S cr
     day-8-junction-count @ 0 do
         i junction-ptr
         \ dup print-junction cr
@@ -221,7 +221,7 @@ end-struct distance-entry%
         endif
     loop
 
-    S" Finding max3" type .S cr
+    \ S" Finding max3" type .S cr
 
     1
     3 0 do
@@ -237,7 +237,7 @@ end-struct distance-entry%
                 drop
             endif
         loop
-        S" Max iteration" type .S cr
+        \ S" Max iteration" type .S cr
         rot * swap cells sizes-table + 0 swap !
     loop
 

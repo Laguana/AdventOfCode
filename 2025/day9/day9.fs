@@ -54,13 +54,30 @@ end-struct point%
     loop
 ;
 
+: interior?
+    2drop 0
+;
+
+: max-rect-size-2
+    0
+    day-9-point-count @ 1- 0 ?do
+        day-9-point-count @ i 1+ ?do
+            i j interior? if 
+                i j rectangle-size 
+                max
+            endif
+        loop
+    loop
+;
+
 : day-9-part-1 ( fd -- answer)
     parse-input
     max-rect-size
 ;
 
 : day-9-part-2 ( fd -- answer)
-    drop 0
+    parse-input
+    max-rect-size-2
 ;
 
 : test-day-9-part-1

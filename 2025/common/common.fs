@@ -37,10 +37,11 @@
 : qsort-partition { smaller? exchange low high -- pivot}
     \ ." partition" .S cr key drop
     low
-    high 1- low ?do
+    high low ?do
         ( pivot_index ) \ pivot_index is the earliest index bigger than the pivot at high
         i high smaller? execute 
         if
+            \ ." partition smaller" i high .S 2drop cr
             \ i is smaller than the pivot value
             \ swap i into the pivot index and increase pivot index =
             dup i 2dup <> if exchange execute else 2drop endif
@@ -55,13 +56,14 @@
     2swap { smaller? exchange }
     ( low high )
     begin
+        \ ." qsort start " .S cr
         over 2dup
         ( low high low high low )
         0 >= -rot < and  \ =
     while
         ( low high )
         2dup smaller? exchange 2swap qsort-partition
-        
+        \ ." qsort found partition" .S cr
         ( low high partition )
         >r 
         ( low high R: pivot )
@@ -80,5 +82,6 @@
             ( low pivot-1 )
         endif
     repeat
+    \ ." qsort end" .S cr
     2drop
 ;
