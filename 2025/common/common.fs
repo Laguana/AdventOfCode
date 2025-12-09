@@ -32,3 +32,53 @@
 : umin ( a b -- c )
     2dup u> if nip else drop endif
 ;
+
+
+: qsort-partition { smaller? exchange low high -- pivot}
+    \ ." partition" .S cr key drop
+    low
+    high 1- low ?do
+        ( pivot_index ) \ pivot_index is the earliest index bigger than the pivot at high
+        i high smaller? execute 
+        if
+            \ i is smaller than the pivot value
+            \ swap i into the pivot index and increase pivot index =
+            dup i 2dup <> if exchange execute else 2drop endif
+            1+
+        endif
+    LOOP
+    \ ." done partition loop" .S cr key drop
+    dup high exchange execute 
+;
+: qsort ( smaller? exchange low high -- ) \ low and high are inclusive indices =
+    \ ." qsort" .S cr
+    2swap { smaller? exchange }
+    ( low high )
+    begin
+        over 2dup
+        ( low high low high low )
+        0 >= -rot < and  \ =
+    while
+        ( low high )
+        2dup smaller? exchange 2swap qsort-partition
+        
+        ( low high partition )
+        >r 
+        ( low high R: pivot )
+        2dup r@ - abs swap r@ - abs > 
+        ( low high high-pivot>low-pivot) if
+            \ high-pivor > low-pivot, recurse low
+            smaller? rot exchange swap r@ 1- recurse
+            ( high )
+            r> 1+ swap
+            ( pivot+1 high )
+        else
+            \ low-pivot > high-pivot, recurse high
+            smaller? exchange rot r@ 1+ swap recurse
+            ( low )
+            r> 1-
+            ( low pivot-1 )
+        endif
+    repeat
+    2drop
+;

@@ -6,7 +6,7 @@ VARIABLE day-8-junction-boxes
 VARIABLE day-8-junction-count
 VARIABLE day-8-circuit-count
 0 day-8-circuit-count !
-VARIABLE day-8-pair-connected
+VARIABLE day-8-distances
 
 struct
     cell% field junction-x
@@ -15,6 +15,12 @@ struct
     cell% field junction-circuit
     cell% field junction-next-index
 end-struct junction-box%
+
+struct
+    cell% field distance-entry-i
+    cell% field distance-entry-j
+    cell% field distance-entry-distance
+end-struct distance-entry%
 
 : print-junction ( ptr -- )
     '(' emit dup junction-x @ . ',' emit dup junction-y @ . ',' emit dup junction-z @ . ':' emit junction-circuit @ . ')' emit
@@ -27,7 +33,7 @@ end-struct junction-box%
 ;
 
 : junction-ptr ( idx -- ptr )
-    junction-box% %size *
+    [ junction-box% %size ]L *
     day-8-junction-boxes @ +
 ;
 
@@ -114,48 +120,81 @@ end-struct junction-box%
     endif
 ;
 
+: populate-distances ( -- )
+    day-8-junction-count @ dup 1- * 2 / distance-entry% %size * dup 
+    allocate throw
+    day-8-distances !
+    day-8-distances @ swap erase
+
+    \ We now have n*(n-1)/2 distance-entry fields to populate
+
+    day-8-distances @
+    ( ptr )
+    day-8-junction-count @ 1- 0 do
+        day-8-junction-count @ i 1+ do
+            dup distance-entry-i i swap !
+            dup distance-entry-j j swap !
+            dup distance-entry-distance 
+            i junction-ptr 
+            j junction-ptr
+            junction-sq-distance
+            swap !
+            [ distance-entry% %size ]L +
+        loop
+    loop
+    \ ." populated distances" .S cr key drop
+    drop
+;
+
+: idx->distance ( i -- ptr )
+    [ distance-entry% %size ]L * day-8-distances @ +
+;
+
+: swap-distances { l r -- }
+    ." swap-distances" l r .S 2drop cr key drop
+    l idx->distance
+    dup dup dup
+    distance-entry-i @ rot
+    distance-entry-j @ rot
+    distance-entry-distance @
+    ( lp li lj ldistance )
+    >r >r >r
+    ( lp R: ldistance lj li )
+    r idx->distance dup >r
+    swap [ distance-entry% %size ]L move
+    \ r is copied to l, now to put l where r was
+    r> dup dup
+    distance-entry-i r> swap !
+    distance-entry-j r> swap !
+    distance-entry-distance r> swap !
+;
+
+: distance-smaller ( i j -- i<=j )
+    ." Distance smaller" .S cr
+    idx->distance distance-entry-distance @
+    swap
+    idx->distance distance-entry-distance @
+    ( jdist idist )
+    ." -Distance smaller" .S cr
+    >=
+;
+
+: sort-distances ( -- )
+    ['] distance-smaller ['] swap-distances 0 
+    day-8-junction-count @ dup 1- * 2 / 1- qsort
+;
+
 : assign-circuits ( n -- )
-    day-8-junction-count @ dup * dup allocate throw 
-    { pair-table-size pair-table }
-    pair-table pair-table-size erase
     0 do
         \ assign n shortest connections
-        -1 -1 -1 
-        ( idx1 idx2 distance )
-        day-8-junction-count @ 1- 0 do
-            \ find next shortest link
-            \ S" Outer loop" type .S cr
-            day-8-junction-count @ i 1+ do
-                \ j is start, i is inner, see if |i-j| is shorter than current min distance
-                \ check if they are already connected?
-                j day-8-junction-count @ * i + pair-table + c@ 0 <> if
-                    \ the junctions were already connected
-                else
-                    \ junctions are not connected
-                    i junction-ptr 
-                    j junction-ptr
-                    ( idx1 idx2 distance i-ptr j-ptr )
-                    junction-sq-distance 2dup u<=
-                    \ S" Better?" type i j .S 2drop cr 
-                    \ i junction-ptr print-junction
-                    \ j junction-ptr print-junction cr
-                    if
-                        drop
-                    else
-                        nip
-                        ( idx1 idx2 newdistance )
-                        -rot 2drop i j rot
-                    endif
-                endif
-            loop
-        loop
-        drop
-        \ i1 i2 are next smallest to be connected
-         S" next smallest found" i . type .S cr
-         2dup junction-ptr print-junction cr junction-ptr print-junction cr
-        \ 2dup junction-ptr swap junction-ptr junction-sq-distance . cr
+        i idx->distance
+        dup distance-entry-i @
+        swap distance-entry-j @
 
-        2dup day-8-junction-count @ * + pair-table + -1 swap c!
+        ( i j )
+        ." assign-circuits pair " .S cr
+         2dup junction-ptr print-junction cr junction-ptr print-junction cr
+         2dup junction-ptr swap junction-ptr junction-sq-distance . cr
 
         2dup junction-ptr junction-circuit @ swap junction-ptr junction-circuit @ dup 0= -rot <> or if
             connect-junctions
@@ -163,7 +202,6 @@ end-struct junction-box%
             2drop
         endif
     loop
-    pair-table free throw
 ;
 
 : sum-biggest-3 ( -- answer )
@@ -209,6 +247,8 @@ end-struct junction-box%
 
 : day-8-part-1 ( fd n -- answer )
     swap parse-input
+    populate-distances
+    sort-distances
     assign-circuits
     sum-biggest-3
 ;
