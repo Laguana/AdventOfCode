@@ -253,8 +253,41 @@ end-struct distance-entry%
     sum-biggest-3
 ;
 
+: assign-until-single ( -- )
+    day-8-junction-count @
+    -1
+    begin
+        ( #circuits pair-idx )
+        1+
+        dup swap idx->distance
+        dup distance-entry-i @
+        swap distance-entry-j @
+
+        ( #circuits pair-idx i j )
+        \ ." assign-circuits pair " .S cr key drop
+        \ 2dup junction-ptr print-junction cr junction-ptr print-junction cr
+        \ 2dup junction-ptr swap junction-ptr junction-sq-distance . cr
+
+        2dup junction-ptr junction-circuit @ swap junction-ptr junction-circuit @ dup 0= -rot <> or if
+            connect-junctions
+            swap 1- dup -rot 1 =
+            ( #circuits pair-idx #circuits=1? )
+        else
+            2drop
+            false
+        endif
+    until
+    nip idx->distance
+    dup distance-entry-i @ junction-ptr junction-x @
+    swap distance-entry-j @ junction-ptr junction-x @
+    *
+;
+
 : day-8-part-2 ( fd -- answer )
-    drop 0
+    parse-input
+    populate-distances
+    sort-distances
+    assign-until-single
 ;
 
 
@@ -278,12 +311,12 @@ end-struct distance-entry%
 : test-day-8-part-2
   s" day8.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-8-part-2  assert( 0 = )
+  r@ day-8-part-2  assert( 25272 = )
   r>
   close-file throw
 ;
 
-( Expect to get ? )
+( Expect to get 3276581616 )
 : do-day-8-part-2
   s" day8.in" r/o open-file throw ( -- fd )
   >r
