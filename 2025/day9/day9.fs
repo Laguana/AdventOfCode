@@ -36,6 +36,10 @@ end-struct point%
     point% %size * day-9-point-list @ +
 ;
 
+: print-rect
+    idx>point dup point-x @ . ',' emit point-y @ .
+;
+
 : rectangle-size ( i j -- size )
     idx>point swap idx>point { jp ip }
     jp point-x @ ip point-x @ - abs 1+
@@ -54,17 +58,133 @@ end-struct point%
     loop
 ;
 
-: interior?
-    2drop 0
+: between ( p a b -- bool )
+    2dup min -rot max { p low high }
+    p low > p high < and
+; \ =
+: between-inclusive ( p a b -- bool )
+    2dup min 1- -rot max 1+ between
+;
+
+: interior? ( a b -- bool )
+    \ A rectangle formed by 2 points is interior
+    \ if no other points are strictly inside it
+    \ and no other sequential pairs cross over it
+    \ .... unless there's shenannigans with adjacent lines. lets try not
+    \ =
+    idx>point dup point-x @ swap point-y @
+    ( a bx by )
+    rot
+    idx>point dup point-x @ swap point-y @
+    { bx by ax ay }
+
+    day-9-point-count @ 1- idx>point dup
+    point-x @ swap point-y @
+    ( x y )
+    2dup 
+    by ay between swap bx ax between and if \ =
+        \ point n-1 is strictly inside this 
+        2drop 
+        false exit
+    endif
+
+    ( x y )
+    day-9-point-count @ 0 ?do
+        \ ." Interior main loop" i .S drop cr
+        i idx>point dup
+        point-x @ swap point-y @
+        ( px py x y )
+        \ ." Interior coords" .S cr
+        2dup by ay between swap bx ax between 
+        and if \ =
+            \ point i is strictly inside this
+            2drop 2drop unloop
+            false exit
+        endif
+
+        \ check the i-1 -> i line
+        ( px py x y )
+        rot
+        ( px x y py)
+         2dup = if
+            \ ." Horizontal" .S cr
+            \ y = py, horizontal line
+            \ intersects if y is between ay by
+            \ and also if px->x contains ax or bx, including the ends =
+            ay by between if
+                ax 2over 
+                2dup bx -rot
+                ( px x y ax px x bx px x)
+                between-inclusive
+                ( px x y ax px x bx-between )
+                >r
+                between-inclusive r> or if
+                    \ either ax or bx is strictly inside
+                    ( px x y )
+                    2drop drop unloop false exit
+                else
+                    \ not intersecting
+                    rot drop
+                endif
+            else
+                rot drop
+                ( x y )
+            endif
+        else
+            \ ." Vertical" .S cr
+            \ y != py, vertical line
+            \ intersects if x is between ax bx
+            \ and also if py->y contains ay or by =
+            ( px x y py )
+            2swap swap
+            ( y py x px )
+            ax bx between if
+                ( y py x )
+                ay 2over 
+                2dup by -rot
+                ( y py x ay y py by y py )
+                between-inclusive
+                ( y py x ay y py by-between )
+                >r
+                between-inclusive
+                r> or if
+                    \ either ay or by is strictly inside
+                    \ ." hit vertical" .S cr
+                    ( y py x )
+                    2drop drop unloop false exit
+                else
+                    \ not intersecting
+                    -rot drop
+                endif
+            else
+                -rot drop
+                ( x y )
+            endif
+        endif
+    loop
+    2drop
+    true
 ;
 
 : max-rect-size-2
     0
     day-9-point-count @ 1- 0 ?do
         day-9-point-count @ i 1+ ?do
-            i j interior? if 
-                i j rectangle-size 
-                max
+            i j rectangle-size
+            ( max next )
+            2dup < if
+                \ this rectangle is worth considering
+                \ ." Considering max" i print-rect j print-rect .S cr cr key drop
+                i j interior? if
+                    \ ." Checks out"
+                    \ this is valid, take it
+                    nip
+                else
+                    \ it is not valid
+                    drop
+                endif
+            else
+                drop
             endif
         loop
     loop
@@ -100,12 +220,12 @@ end-struct point%
 : test-day-9-part-2
   s" day9.example" r/o open-file throw ( -- fd )
   >r
-  r@ day-9-part-2  assert( 0 = )
+  r@ day-9-part-2 . \ assert( 24 = )
   r>
   close-file throw
 ;
 
-( Expect to get ? )
+( Expect to get 1465767840 )
 : do-day-9-part-2
   s" day9.in" r/o open-file throw ( -- fd )
   >r
