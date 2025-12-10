@@ -7,7 +7,13 @@ struct
     cell% field machine-num-lights
     cell% field machine-num-buttons
     cell% field machine-buttons
+    \ then afterwards, #lights more cells of desired-power
 end-struct machine%
+
+: machine-desired-power ( machine -- ptr )
+    dup machine-num-buttons @
+    3 + cells +
+;
 
 : print-machine { machine -- }
     machine machine-desired-state @ '[' emit . ']' emit
@@ -68,7 +74,15 @@ end-struct machine%
     repeat
     ( pinput )
     assert( dup c@ '{' = )
-    drop
+
+    begin
+        1+
+        get-number ,
+        dup c@ ',' =
+    while
+        1+
+    repeat
+    assert( c@ '}' = )
     machine
 ;
 
@@ -138,9 +152,23 @@ end-struct machine%
     drop r> drop
 ;
 
-: day-10-part-2 ( fd -- answer)
-    drop
+: solve-power { machine -- answer }
     0
+;
+
+: day-10-part-2 ( fd -- answer)
+    >r
+    0
+    begin
+        day-10-buf 300 r@ read-line throw
+    while
+        day-10-buf + 0 swap c!
+        HERE >r
+        read-machine
+        solve-power +
+        r> dp !
+    repeat
+    drop r> drop
 ;
 
 : test-day-10-part-1
