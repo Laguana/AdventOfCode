@@ -2,6 +2,14 @@
     dup '0' >= swap '9' <= and \ =
 ;
 
+: skip-spaces ( ptr -- ptr )
+    begin
+        dup c@ 32 =
+    while
+        1+
+    repeat
+;
+
 : find-next-number-or-eol ( ptr -- ptr eol? )
     begin
         dup c@ dup is-digit? swap 10 = or
