@@ -107,30 +107,36 @@
 
 struct
     cell% field associative-map-#buckets
-    double% drop 0 associative-map-buckets
+    double% drop 0 field associative-map-buckets
 end-struct associative-map%
 
 \ associative map from int to cell, excluding 0
 \ removing not supported
 : create-associative-map ( #buckets -- map )
-    dup associative-map% rot 2 * cells + %alloc
+    dup associative-map% rot 2 * cells +  %alloc
     ( #buckets map )
     2dup associative-map-#buckets !
-    swap 2 * cells over erase
+    swap 2 * cells over associative-map-buckets swap erase
 ;
 
 : associative-map-lookup { map entry -- result? found? }
     map associative-map-#buckets @ entry over mod
     ( #buckets initial )
+    \ ." #buckets initial" .S cr 
     swap { #buckets }
     #buckets 0 do
         ( candidate-index )
         map associative-map-buckets over 2* cells +
         dup @
+        \ ." Checking" .S cr
         ( candidate-index bucket-ptr bucket-key)
-        dup 0= if nip nip unloop exit endif
+        dup 0= if 
+            \ ." found empty, not present" .S cr 
+            nip nip unloop exit
+        endif
         entry = if
-            1+ @ nip true unloop exit
+            \ ." found entry" .S cr
+            cell+ @ nip true unloop exit
         endif
         drop
         1+ #buckets mod
@@ -142,5 +148,28 @@ end-struct associative-map%
     map associative-map-#buckets @ entry over mod
     ( #buckets initial )
     swap { #buckets }
-
+    #buckets 0 do
+        ( candidate-index )
+        map associative-map-buckets over 2* cells +
+        dup @
+        dup 0= if
+            ( candidate-index bucket-ptr bucket-value )
+            \ ." Setting in empty cell" .S cr
+            drop nip dup entry swap !
+            \ .S cr
+            unloop
+            cell+ value swap ! 0
+            exit
+        endif
+        entry = if
+            ( candidate-index bucket-ptr )
+            nip cell+
+            unloop 
+            dup @ swap value swap !
+            exit
+        endif
+        drop
+        1+ #buckets mod
+    LOOP
+    assert( ." Unable to find spot for entry" false )
 ;
