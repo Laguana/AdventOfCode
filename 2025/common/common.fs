@@ -109,6 +109,18 @@ end-struct associative-map%
     swap 2 * cells over associative-map-buckets swap erase
 ;
 
+: for-each-associative-map { xt map -- ?? }
+    map associative-map-buckets
+    map associative-map-#buckets @
+    0 do
+        dup >r @ ?dup 0<> if
+            r@ cell+ @ xt execute
+        endif
+        r> 2 cells +
+    loop
+    drop
+;
+
 : free-associative-map ( map -- )
     free throw
 ;
