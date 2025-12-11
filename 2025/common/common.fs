@@ -104,3 +104,43 @@
     \ ." qsort end" .S cr
     2drop
 ;
+
+struct
+    cell% field associative-map-#buckets
+    double% drop 0 associative-map-buckets
+end-struct associative-map%
+
+\ associative map from int to cell, excluding 0
+\ removing not supported
+: create-associative-map ( #buckets -- map )
+    dup associative-map% rot 2 * cells + %alloc
+    ( #buckets map )
+    2dup associative-map-#buckets !
+    swap 2 * cells over erase
+;
+
+: associative-map-lookup { map entry -- result? found? }
+    map associative-map-#buckets @ entry over mod
+    ( #buckets initial )
+    swap { #buckets }
+    #buckets 0 do
+        ( candidate-index )
+        map associative-map-buckets over 2* cells +
+        dup @
+        ( candidate-index bucket-ptr bucket-key)
+        dup 0= if nip nip unloop exit endif
+        entry = if
+            1+ @ nip true unloop exit
+        endif
+        drop
+        1+ #buckets mod
+    LOOP
+    assert( ." entry not found and never hit an empty cell" false )
+;
+
+: associative-map-set { map entry value -- previous }
+    map associative-map-#buckets @ entry over mod
+    ( #buckets initial )
+    swap { #buckets }
+
+;
