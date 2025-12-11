@@ -41,6 +41,17 @@
     2dup u> if nip else drop endif
 ;
 
+: count-bits-set ( n -- #bits )
+    0 swap
+    begin
+        dup 1 and rot + swap 2/
+        ?dup 0=
+    until
+;
+
+: bit-set? ( n i -- set? )
+    1 swap lshift and 0<>
+;
 
 : qsort-partition { smaller? exchange low high -- pivot}
     \ ." partition" .S cr key drop

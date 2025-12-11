@@ -24,6 +24,11 @@ end-struct machine%
         machine machine-buttons i cells + @ .
         ')' emit
     loop
+    '{' emit 
+    machine machine-num-lights @ 0 DO
+        machine machine-desired-power i cells + @ .
+    LOOP
+    '}' emit cr
 ;
 
 : read-bits-list ( pinput -- pinput n )
@@ -78,10 +83,8 @@ end-struct machine%
     begin
         1+
         get-number ,
-        dup c@ ',' =
-    while
-        1+
-    repeat
+        dup c@ ',' <>
+    until
     assert( c@ '}' = )
     machine
 ;
@@ -152,7 +155,82 @@ end-struct machine%
     drop r> drop
 ;
 
+struct
+    char% field matrix-count-rows
+    char% field matrix-count-columns
+    cell% drop 0 field matrix-data \ rows * columns entries actually
+end-struct matrix%
+
+: print-matrix { matrix -- }
+    matrix matrix-data
+    matrix matrix-count-rows c@ 0 DO
+        '[' emit
+        matrix matrix-count-columns c@ 0 DO
+            dup @ .
+            1 cells +
+        LOOP
+        ']' emit cr
+    LOOP
+    drop
+;
+
+: machine>matrix { machine -- matrix }
+    \ see solve-power for description
+    \ machine print-machine
+    matrix% %allot { matrix } 
+    machine machine-num-lights @ dup matrix matrix-count-rows c!
+    machine machine-num-buttons @ dup 1+ matrix matrix-count-columns c!
+    assert( matrix matrix-data HERE .S cr = )
+    { #lights #buttons }
+    #lights 0 DO
+        \ for each button, if it touches that index then 1 else 0
+        #buttons 0 DO
+            machine machine-buttons i cells + @
+            j bit-set? negate 
+            \ dup .
+            ,
+        LOOP
+        \ end with the desired count
+        machine machine-desired-power i cells + @ 
+        \ dup . cr
+        ,
+    LOOP
+    matrix
+    \ dup print-matrix
+;
+
+: gaussian-eliminate { pmatrix -- } \ modify in place
+
+;
+
 : solve-power { machine -- answer }
+    \ This isn't search at all, this is algebra...
+    \ (0,2) (1,2) (1)  {a,b,c}
+    \ is actually a discrete math problem
+    \ k0 = a, k1 + k2 = b, k0 + k1 = c, k0,k1,k2 >= 0, minimise k0+k1+k2
+    \ i.e.
+    \ [ 1  0  0  ] [k0] = [a]
+    \ [ 0  1  1  ] [k1] = [b]
+    \ [ 1  1  0  ] [k2] = [c]
+    \ where the buttons form the columns of the matrix
+    \ and the goals form the outcome
+    \ and we need to determine the values of k =
+
+    \ However
+    \ It's actually an integer linear programming thing, which is known to be NP,
+    \ and the solutions are kind of a pain
+    \ so, what if we just do search anyway i guess?
+    \ ok fine, after doing some gaussian elimination =
+
+    machine machine>matrix
+    print-matrix
+
+
+    \ Search state is #lights * 9 bits, max of 90 bits; can fit in a double cell = 2 x 8 bytes = 2 x 64 bits = 128 bits
+    \ Actually using double cell is a bit awkward, so instead we just use 2 cells, putting 45 bits in each
+    \ and we can store the distance travelled in the top 16 bits of one of the cells ==
+
+    
     0
 ;
 
