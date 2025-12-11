@@ -31,16 +31,6 @@
     drop swap
 ;
 
-: max ( a b -- c )
-    2dup > if drop else nip endif
-;
-: min ( a b -- c )
-    2dup > if nip else drop endif
-;
-: umin ( a b -- c )
-    2dup u> if nip else drop endif
-;
-
 : count-bits-set ( n -- #bits )
     0 swap
     begin
@@ -117,6 +107,10 @@ end-struct associative-map%
     ( #buckets map )
     2dup associative-map-#buckets !
     swap 2 * cells over associative-map-buckets swap erase
+;
+
+: free-associative-map ( map -- )
+    free throw
 ;
 
 : associative-map-lookup { map entry -- result? found? }
