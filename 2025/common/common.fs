@@ -43,6 +43,22 @@
     1 swap lshift and 0<>
 ;
 
+: gcd ( a b -- gcd )
+    begin
+        ( a b )
+        swap over
+        ( b a b )
+        mod
+        ( b a%b )
+        ?dup 0=
+    until
+;
+
+: lcm ( a b -- lcm )
+    2dup gcd
+    / *
+;
+
 : qsort-partition { smaller? exchange low high -- pivot}
     \ ." partition" .S cr key drop
     low

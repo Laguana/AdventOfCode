@@ -174,13 +174,22 @@ end-struct matrix%
     drop
 ;
 
+: matrix-at { matrix row col -- v }
+    \ ." m[r,c]" row . col . 
+    matrix matrix-count-columns c@
+    row * col + cells 
+    \ '(' emit dup . ')' emit
+    matrix matrix-data + @
+    \ '=' emit dup . cr
+;
+
 : machine>matrix { machine -- matrix }
     \ see solve-power for description
     \ machine print-machine
     matrix% %allot { matrix } 
     machine machine-num-lights @ dup matrix matrix-count-rows c!
     machine machine-num-buttons @ dup 1+ matrix matrix-count-columns c!
-    assert( matrix matrix-data HERE .S cr = )
+    \ assert( matrix matrix-data HERE .S cr = )
     { #lights #buttons }
     #lights 0 DO
         \ for each button, if it touches that index then 1 else 0
@@ -199,8 +208,146 @@ end-struct matrix%
     \ dup print-matrix
 ;
 
-: gaussian-eliminate { pmatrix -- } \ modify in place
+: scale-matrix-row { matrix row c -- }
+    matrix matrix-count-columns c@ dup
+    ( #columns #columns )
+    row * cells
+    matrix matrix-data +
+    swap 0 DO
+        ( ptr )
+        dup @ c * over !
+        cell+
+    LOOP
+;
 
+: swap-matrix-rows { matrix r1 r2 -- }
+    here dup >r
+    matrix matrix-count-columns c@ dup cells allot
+    ( tempspace #columns )
+    cells
+    dup r1 * matrix matrix-data +
+    ( tempspace |row| pr1 )
+    2dup swap
+    ( tempspace |row| pr1 pr1 |row| )
+    4 pick swap move
+    ( tempspace |row| pr1 )
+    over r2 * matrix matrix-data +
+    ( tempspace |row| pr1 pr2 )
+    -rot
+    ( tempspace pr2 |row| pr1 )
+    2 pick swap 2 pick
+    ( tempspace pr2 |row| pr2 pr1 |row| )
+    move move
+    r> dp !
+;
+
+\ add c * r1 to r2 
+: add-matrix-rows { matrix r1 r2 c -- }
+    matrix matrix-count-columns c@ dup cells
+    ( #columns |row| )
+    dup r2 * matrix matrix-data * + swap
+    r1 * matrix matrix-data +
+    ( #columns pr2 pr1 )
+    rot 0 DO
+        2dup 
+        ( pr2 pr1 pr2 pr1 )
+        @ c * swap +!
+        cell+ swap cell+ swap
+    LOOP
+;
+
+: matrix-row-with-col ( matrix col startrow -- row )
+    >r
+    over matrix-count-rows c@ r> DO
+        2dup i swap matrix-at 0<> if
+            ( matrix col )
+            2drop i unloop exit
+        endif
+    LOOP
+    2drop -1
+;
+
+: gaussian-eliminate { matrix -- } \ modify in place
+    0
+    matrix matrix-count-rows c@ 1- 0 DO
+        ." Eliminating for row " i . .S cr
+        \ take the leading value in each row
+        \ put it at the top
+        \ subtract from cells below to 0 them outcome
+        ( column )
+        begin 
+            matrix over i matrix-row-with-col 
+            ( column row-with-col )
+            \ ." row-with-col" .S cr
+            dup -1 = if 
+                drop 1+ 
+                matrix matrix-count-columns c@ 1- over >=
+            else
+                true
+            endif
+        until
+        \ ." Candidate row" .S cr
+
+        ( column row-with-col )
+
+        matrix matrix-count-columns c@ 1- over 
+        \ ." Checking out of columns?" .S cr
+        < if
+            \ we ran out of columns and went into the answer column
+            \ we must be done
+            ." Ran out of data?" .S cr
+            2drop unloop exit
+        endif
+
+        ( column row-with-col )
+
+        dup i <> if
+            \ ." Swapping" .S cr
+            matrix i rot swap-matrix-rows
+            \ matrix print-matrix
+        else
+            drop
+        endif
+
+        \ row i now has nonzero in column
+        \ eliminate below it
+        matrix matrix-count-rows c@ i 1+ ?do
+            ." Eliminating j i " j . i . .S cr
+            \ subtract row j from row i
+            ( column )
+            dup matrix j rot matrix-at
+            ( column mjc )
+            over matrix i rot matrix-at
+            ?dup 0<> if
+                ( column mjc mic )
+                \ j is 0 0 mjc . . .
+                \ i is 0 0 mic . . .
+                \ want 0 0 mic-mjc*mic/mjc . . .
+                \ avoiding fractions,
+                \      0 0 lcm-lcm
+                \ =    0 0 mic*(lcm/mic) - mjc*lcm/mjc
+                \ i.e. scale i by (lcm/mic), add row j * lcm/mjc
+                2dup lcm
+                ( column mjc mic lcm )
+                swap over swap /
+                ( column mjc lcm lcm/mic )
+                matrix i rot scale-matrix-row
+                ( column mjc lcm )
+                swap /
+                ( column mjc/lcm )
+                matrix i rot j swap add-matrix-rows
+            else
+                ( column mjc )
+                drop
+            endif
+        LOOP
+
+        ." After step " i . .S cr
+        matrix print-matrix
+
+        1+
+    LOOP
+    drop
 ;
 
 : solve-power { machine -- answer }
@@ -223,8 +370,11 @@ end-struct matrix%
     \ ok fine, after doing some gaussian elimination =
 
     machine machine>matrix
+    ." Constructed matrix" cr
+    dup print-matrix
+    dup gaussian-eliminate
+    ." Eliminated matrix" .S cr
     print-matrix
-
 
     \ Search state is #lights * 9 bits, max of 90 bits; can fit in a double cell = 2 x 8 bytes = 2 x 64 bits = 128 bits
     \ Actually using double cell is a bit awkward, so instead we just use 2 cells, putting 45 bits in each
