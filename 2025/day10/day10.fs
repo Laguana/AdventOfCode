@@ -218,6 +218,7 @@ end-struct matrix%
         dup @ c * over !
         cell+
     LOOP
+    drop
 ;
 
 : swap-matrix-rows { matrix r1 r2 -- }
@@ -245,7 +246,7 @@ end-struct matrix%
 : add-matrix-rows { matrix r1 r2 c -- }
     matrix matrix-count-columns c@ dup cells
     ( #columns |row| )
-    dup r2 * matrix matrix-data * + swap
+    dup r2 * matrix matrix-data + swap
     r1 * matrix matrix-data +
     ( #columns pr2 pr1 )
     rot 0 DO
@@ -254,6 +255,7 @@ end-struct matrix%
         @ c * swap +!
         cell+ swap cell+ swap
     LOOP
+    2drop
 ;
 
 : matrix-row-with-col ( matrix col startrow -- row )
@@ -267,10 +269,23 @@ end-struct matrix%
     2drop -1
 ;
 
+: matrix-row-starts-negative { matrix row -- f }
+    matrix matrix-count-columns c@ cells row *
+    matrix matrix-data +
+    matrix matrix-count-columns c@ 0 do
+        ( ptr )
+        dup @ ?dup 0<> if
+            nip unloop 0< exit
+        endif
+        cell+
+    loop
+    drop false
+;
+
 : gaussian-eliminate { matrix -- } \ modify in place
     0
     matrix matrix-count-rows c@ 1- 0 DO
-        ." Eliminating for row " i . .S cr
+        \ ." Eliminating for row " i . .S cr
         \ take the leading value in each row
         \ put it at the top
         \ subtract from cells below to 0 them outcome
@@ -281,8 +296,16 @@ end-struct matrix%
             \ ." row-with-col" .S cr
             dup -1 = if 
                 drop 1+ 
-                matrix matrix-count-columns c@ 1- over >=
+                matrix matrix-count-columns c@ 1- over <
+                \ ." Not found yet" .S cr
+                if
+                    \ we ran out of matrix
+                    256 true
+                else
+                    false
+                endif
             else
+                \ ." Found" .S cr
                 true
             endif
         until
@@ -295,7 +318,8 @@ end-struct matrix%
         < if
             \ we ran out of columns and went into the answer column
             \ we must be done
-            ." Ran out of data?" .S cr
+            \ matrix print-matrix
+            \ ." Ran out of data?" .S cr
             2drop unloop exit
         endif
 
@@ -312,7 +336,7 @@ end-struct matrix%
         \ row i now has nonzero in column
         \ eliminate below it
         matrix matrix-count-rows c@ i 1+ ?do
-            ." Eliminating j i " j . i . .S cr
+            \ ." Eliminating j i " j . i . .S cr
             \ subtract row j from row i
             ( column )
             dup matrix j rot matrix-at
@@ -326,24 +350,30 @@ end-struct matrix%
                 \ avoiding fractions,
                 \      0 0 lcm-lcm
                 \ =    0 0 mic*(lcm/mic) - mjc*lcm/mjc
-                \ i.e. scale i by (lcm/mic), add row j * lcm/mjc
+                \ i.e. scale i by (lcm/mic), add row j * -lcm/mjc
                 2dup lcm
                 ( column mjc mic lcm )
                 swap over swap /
                 ( column mjc lcm lcm/mic )
                 matrix i rot scale-matrix-row
+                \ matrix print-matrix 
                 ( column mjc lcm )
                 swap /
                 ( column mjc/lcm )
-                matrix i rot j swap add-matrix-rows
+                matrix j rot i swap negate add-matrix-rows
+
+                 \ if row i now starts negative, negate it
+                 matrix i matrix-row-starts-negative if
+                    matrix i -1 scale-matrix-row
+                 endif
             else
                 ( column mjc )
                 drop
             endif
         LOOP
 
-        ." After step " i . .S cr
-        matrix print-matrix
+        \ ." After step " i . .S cr
+        \ matrix print-matrix cr
 
         1+
     LOOP
