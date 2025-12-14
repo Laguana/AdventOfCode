@@ -128,7 +128,6 @@ end-struct associative-map%
 : for-each-associative-map { xt map -- ?? }
     map associative-map-buckets
     map associative-map-#buckets @
-    ." foreach map ".S cr
     0 do
         dup >r @ ?dup 0<> if
             r@ cell+ @ xt execute

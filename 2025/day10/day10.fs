@@ -572,7 +572,7 @@ end-struct matrix%
     day-10-precomputed-states @ parity 1+ associative-map-lookup
     invert if
         \ no way to reach this state
-        \ ." Bailing, no way to satisfy " parity . cr
+        ." Bailing, no way to satisfy " parity . cr
         exit
     endif
     { button-list }
@@ -671,6 +671,10 @@ end-struct matrix%
     LOOP
 ;
 
+: free-list32 ( key value )
+    nip free throw
+;
+
 : day-10-part-2 ( fd -- answer)
     >r
     0
@@ -683,6 +687,7 @@ end-struct matrix%
         dup precompute-state-reachability
         dup machine-desired-power solve-power-rec +
         ." top level step " .S cr
+        ['] free-list32 day-10-precomputed-states @ for-each-associative-map
         day-10-precomputed-states @ free-associative-map
         r> dp !
     repeat
