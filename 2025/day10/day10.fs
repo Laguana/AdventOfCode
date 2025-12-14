@@ -1,6 +1,7 @@
 require ../common/common.fs
 
 CREATE day-10-buf 300 allot
+VARIABLE day-10-precomputed-states
 
 struct
     cell% field machine-desired-state
@@ -174,13 +175,14 @@ end-struct matrix%
     drop
 ;
 
-: matrix-at { matrix row col -- v }
-    \ ." m[r,c]" row . col . 
+: matrix-at-ptr { matrix row col -- ptr }
     matrix matrix-count-columns c@
     row * col + cells 
-    \ '(' emit dup . ')' emit
-    matrix matrix-data + @
-    \ '=' emit dup . cr
+    matrix matrix-data +
+;
+
+: matrix-at ( matrix row col -- v )
+    matrix-at-ptr @
 ;
 
 : machine>matrix { machine -- matrix }
@@ -269,22 +271,32 @@ end-struct matrix%
     2drop -1
 ;
 
-: matrix-row-starts-negative { matrix row -- f }
+: matrix-row-starts-index { matrix row -- i }
     matrix matrix-count-columns c@ cells row *
     matrix matrix-data +
     matrix matrix-count-columns c@ 0 do
         ( ptr )
-        dup @ ?dup 0<> if
-            nip unloop 0< exit
+        dup @ 0<> if
+            \ ." Found nonzero " i . .S cr
+            drop i unloop exit 
         endif
         cell+
     loop
-    drop false
+    drop -1
+;
+
+: matrix-row-starts-negative { matrix row -- f }
+    matrix row matrix-row-starts-index
+    dup 0< if 
+        negate
+    else
+        matrix row rot matrix-at 0<
+    endif
 ;
 
 : gaussian-eliminate { matrix -- } \ modify in place
     0
-    matrix matrix-count-rows c@ 1- 0 DO
+    matrix matrix-count-rows c@ 0 DO
         \ ." Eliminating for row " i . .S cr
         \ take the leading value in each row
         \ put it at the top
@@ -334,43 +346,44 @@ end-struct matrix%
         endif
 
         \ row i now has nonzero in column
-        \ eliminate below it
-        matrix matrix-count-rows c@ i 1+ ?do
+        \ eliminate elsewhere
+        matrix matrix-count-rows c@ 0 ?do
             \ ." Eliminating j i " j . i . .S cr
+            \ matrix print-matrix cr
             \ subtract row j from row i
             ( column )
-            dup matrix j rot matrix-at
-            ( column mjc )
-            over matrix i rot matrix-at
-            ?dup 0<> if
-                ( column mjc mic )
-                \ j is 0 0 mjc . . .
-                \ i is 0 0 mic . . .
-                \ want 0 0 mic-mjc*mic/mjc . . .
-                \ avoiding fractions,
-                \      0 0 lcm-lcm
-                \ =    0 0 mic*(lcm/mic) - mjc*lcm/mjc
-                \ i.e. scale i by (lcm/mic), add row j * -lcm/mjc
-                2dup lcm
-                ( column mjc mic lcm )
-                swap over swap /
-                ( column mjc lcm lcm/mic )
-                matrix i rot scale-matrix-row
-                \ matrix print-matrix 
-                ( column mjc lcm )
-                swap /
-                ( column mjc/lcm )
-                matrix j rot i swap negate add-matrix-rows
+            i j <> if
+                dup matrix i rot matrix-at
+                ?dup 0<> if
+                    over matrix j rot matrix-at
+                    swap 
+                    ( column mjc mic )
+                    \ j is 0 0 mjc . . .
+                    \ i is 0 0 mic . . .
+                    \ want 0 0 mic-mjc*mic/mjc . . .
+                    \ avoiding fractions,
+                    \      0 0 lcm-lcm
+                    \ =    0 0 mic*(lcm/mic) - mjc*lcm/mjc
+                    \ i.e. scale i by (lcm/mic), add row j * -lcm/mjc
+                    2dup lcm
+                    ( column mjc mic lcm )
+                    swap over swap /
+                    ( column mjc lcm lcm/mic )
+                    matrix i rot scale-matrix-row
+                    \ matrix print-matrix 
+                    ( column mjc lcm )
+                    swap /
+                    ( column mjc/lcm )
+                    matrix j rot i swap negate add-matrix-rows
 
-                 \ if row i now starts negative, negate it
-                 matrix i matrix-row-starts-negative if
-                    matrix i -1 scale-matrix-row
-                 endif
-            else
-                ( column mjc )
-                drop
+                    \ if row i now starts negative, negate it
+                    matrix i matrix-row-starts-negative if
+                        matrix i -1 scale-matrix-row
+                    endif
+                endif
             endif
         LOOP
+
 
         \ ." After step " i . .S cr
         \ matrix print-matrix cr
@@ -380,7 +393,102 @@ end-struct matrix%
     drop
 ;
 
-: solve-power { machine -- answer }
+: any-other-nonzero { matrix row leftmost -- f }
+    matrix matrix-count-columns c@ 1- leftmost 1+ ?DO
+        matrix row i matrix-at 0<> if
+            \ ." Found nonzero on row/col " row . i . .S cr
+            true unloop exit
+        endif
+    LOOP
+    false
+;
+
+: substitute-col-in-matrix { matrix col k -- }
+    matrix matrix-count-rows c@ 0 ?DO
+        matrix i col matrix-at-ptr
+        dup @
+        swap 0 swap !
+        k * negate
+        matrix i matrix matrix-count-columns c@ 1- matrix-at-ptr +!
+    LOOP
+;
+
+: solve-fully-constrained { matrix -- sum }
+    \ any row with only one nonzero entry, going bottom up, can be solved
+    \ and that solution applied to the other rows =
+    0
+    -1 matrix matrix-count-rows c@ 1- -DO
+        \ ." Looping " i . cr
+        matrix i matrix-row-starts-index
+        dup 0< if
+            \ ." Row doesn't start " i . cr
+            drop
+        else
+            ( acc lefmost-idx )
+            matrix over i swap any-other-nonzero invert if
+                \ ." There is an all-zero " i . .S cr
+                ( acc col )
+                \ all others are nonzero; we want to solve k_col * m[row,col] = m[row, #cols-1]
+                \ k_col = m[row,#cols-1]/m[row,col]
+                matrix over i swap matrix-at
+                ( acc col m[row,col] )
+                matrix i matrix matrix-count-columns c@ 1- matrix-at
+                ( acc col m[row,col] m[row,#cols-1] )
+                \ ." Solving" .S cr
+                swap /
+                ( acc col k_col )
+                assert( dup 0>= ) 
+                rot over + -rot
+                ( acc col k_col )
+                \ now clear this row and substitute in elsewhere =
+                matrix -rot substitute-col-in-matrix
+            else
+                drop
+            endif
+        endif
+    1 -LOOP
+;
+
+: matrix-swap-columns { matrix from to -- }
+    matrix matrix-count-rows c@ 0 DO
+
+    LOOP
+;
+
+: reorder-matrix-columns { matrix -- }
+    \ Given a reduced matrix, when looking from the bottom up
+    \ ensure that columns get non-zero values first, swapping columns if necessary
+    \ e.g.
+    \ [ 1 0 0  1  6 ]      [ 1 0  1 0  6 ]
+    \ [ 0 1 0 -1 -1 ] -->  [ 0 1 -1 0 -1 ]
+    \ [ 0 0 1  0  5 ]      [ 0 0  0 1  5 ]
+    \
+    \
+;
+
+: solve-matrix-recursive { matrix row col presses counts -- min_presses }
+    row 0< if
+        presses exit
+    endif
+
+
+
+;
+
+: solve-matrix { matrix -- answer }
+    matrix solve-fully-constrained
+    ." fully constrained removed " .S cr
+    matrix print-matrix 
+    key drop
+
+    \ uhhhh so from here you still go work out how many free variables there are
+    \ and go work out what answers you get
+    \ that's a pain =
+
+
+;
+
+: solve-power-matrix { machine -- answer }
     \ This isn't search at all, this is algebra...
     \ (0,2) (1,2) (1)  {a,b,c}
     \ is actually a discrete math problem
@@ -404,14 +512,163 @@ end-struct matrix%
     dup print-matrix
     dup gaussian-eliminate
     ." Eliminated matrix" .S cr
-    print-matrix
-
-    \ Search state is #lights * 9 bits, max of 90 bits; can fit in a double cell = 2 x 8 bytes = 2 x 64 bits = 128 bits
-    \ Actually using double cell is a bit awkward, so instead we just use 2 cells, putting 45 bits in each
-    \ and we can store the distance travelled in the top 16 bits of one of the cells ==
-
+    dup print-matrix
     
+    \ Lets also try to reduce things where its simple? maybe? eh
+    
+    solve-matrix
+;
+
+: light-state { machine button-bits -- state }
     0
+    machine machine-num-buttons @ 0 DO
+        1 i lshift button-bits and if \ =
+            machine machine-buttons i cells + @ 
+            \ ." xoring state" .S cr
+            xor
+        endif
+    LOOP
+;
+
+: solve-power-rec { machine joltage-goal -- answer }
+    \ someone posted a neat approach at https://old.reddit.com/r/adventofcode/comments/1pk87hl/2025_day_10_part_2_bifurcate_your_way_to_victory/
+    \ so i figured I'd try that rather than banging my head against linear algebra more
+
+    \ The gist of it is 'we can duplicate any sequence to double the value,
+    \ so if we find how to get half way we can double it, then deal with odd remainders'
+    \ In particular, if our goal is {x,y,z,...} then we can ask 'how do we solve the final bit'
+    \ i.e. how do we reach [x%2,y%2,z%s,...], account for joltage differences,
+    \ and then recurse. Because we are working %2 then the joltage goal will always
+    \ be even, so we can halve it and say we do the steps twice = 
+
+    \ Check if we're done; joltage-goal of all 0 is done
+    \ also compute parity bits
+    0
+    true
+    machine machine-num-lights @ 0 DO
+        ( parity all0? )
+        joltage-goal i cells + @ swap over 0= and \ =
+        ( parity v all0? )
+        -rot
+        2 mod
+        ( all0? parity v%2 )
+        \ ." pre shift" .S cr
+        i lshift or swap
+        \ ." mid-parity" .S cr
+    LOOP
+    ( parity all0? )
+    if
+        \ we're done, 0 steps from here
+        \ ." Base case " .S cr
+        drop 0 exit
+    endif
+
+    \ ." Parity" .S cr
+    { parity }
+
+    -1 ( best-so-far )
+    \ ." Starting loop " machine joltage-goal .S 2drop cr
+
+    day-10-precomputed-states @ parity 1+ associative-map-lookup
+    invert if
+        \ no way to reach this state
+        \ ." Bailing, no way to satisfy " parity . cr
+        exit
+    endif
+    { button-list }
+
+    button-list list-length @ 0 DO
+        button-list list-data i cells + @ { buttons }
+        \ ." button " buttons . .S cr
+        
+        \ this set of buttons gets us to the right parity, consider recursing
+        HERE { rec-goal }
+
+        rec-goal 
+        machine machine-num-lights @ cells dup allot erase
+        
+        \ update goal joltage based on buttons
+
+        ( best-so-far )
+
+        \ ." Copying goal" cr
+        machine machine-num-lights @ 0 DO
+            joltage-goal i cells + @
+            rec-goal i cells + !
+        LOOP
+
+        \ ." Pushing buttons" cr
+        machine machine-num-buttons @ 0 DO
+            buttons 1 i lshift and if \ we are toggling button i =
+                machine machine-buttons i cells + @
+                ( best-so-far button-i )
+                machine machine-num-lights @ 0 DO
+                    dup 1 i lshift and if \ =
+                        -1 rec-goal i cells + +!
+                    endif
+                LOOP
+                drop
+            endif
+        LOOP
+
+        \ ." Checking and halving" cr
+        \ check if it is valid, we didn't go negative, and halve
+        true
+        machine machine-num-lights @ 0 DO
+            rec-goal i cells + @ dup 0>= rot and \ =
+            ( best-so-far v valid? )
+            swap 2/ rec-goal i cells + ! 
+        LOOP
+
+        ( best-so-far valid? )
+        if
+            \ ok, we have our new goal
+            machine rec-goal recurse
+            \ ." Returning from recusion" .S cr
+            2 * 
+            buttons count-bits-set +
+            \ ." added cost" .S cr
+            umin
+        endif
+
+        ( best-so-far )
+
+        rec-goal dp !
+    LOOP
+;
+
+: precompute-state-reachability { machine -- }
+    1 machine machine-num-lights @ 1+ lshift { mapsize }
+    mapsize create-associative-map day-10-precomputed-states !
+
+    1 machine machine-num-buttons @ lshift 0 DO
+        assert( day-10-precomputed-states @ associative-map-#buckets @ mapsize = )
+        machine i light-state 1+
+        dup 
+        day-10-precomputed-states @ swap associative-map-lookup invert
+        ( state val? found? )
+        if 
+            ( state )
+            \ not found; insert
+            make-list
+            ( state list )
+            dup -rot
+            ( list state list )
+            day-10-precomputed-states @ -rot 
+            \ ." Creating" .S cr
+            associative-map-set
+            ( list old )
+            drop
+        else
+            ( state list )
+            \ ." Found already" .S cr
+            nip
+        endif
+
+        ( list )
+        \ ." appending" .S cr
+        i list32-append
+    LOOP
 ;
 
 : day-10-part-2 ( fd -- answer)
@@ -423,7 +680,10 @@ end-struct matrix%
         day-10-buf + 0 swap c!
         HERE >r
         read-machine
-        solve-power +
+        dup precompute-state-reachability
+        dup machine-desired-power solve-power-rec +
+        ." top level step " .S cr
+        day-10-precomputed-states @ free-associative-map
         r> dp !
     repeat
     drop r> drop

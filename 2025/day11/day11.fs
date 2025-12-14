@@ -2,24 +2,6 @@ require ../common/common.fs
 
 CREATE day-11-buf 100 allot
 
-struct
-    cell% field list-length
-    cell% 32 * field list-data
-end-struct list32%
-
-: make-list ( -- list )
-    list32% %alloc
-    dup list32% %size erase
-;
-
-: list32-append { list v -- }
-    list list-length @ 
-    assert( dup 32 < )
-    cells
-    list list-data + v swap !
-    1 list list-length +!
-;
-
 : chars-to-int ( ptr -- n )
     dup c@ 'a' - 5 lshift
     over 1+ c@ 'a' - + 5 lshift

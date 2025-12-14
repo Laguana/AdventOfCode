@@ -128,6 +128,7 @@ end-struct associative-map%
 : for-each-associative-map { xt map -- ?? }
     map associative-map-buckets
     map associative-map-#buckets @
+    ." foreach map ".S cr
     0 do
         dup >r @ ?dup 0<> if
             r@ cell+ @ xt execute
@@ -142,7 +143,9 @@ end-struct associative-map%
 ;
 
 : associative-map-lookup { map entry -- result? found? }
-    map associative-map-#buckets @ entry over mod
+    assert( entry 0<> )
+    map associative-map-#buckets @ entry  over mod
+    assert( dup 0>= )
     ( #buckets initial )
     \ ." #buckets initial" .S cr 
     swap { #buckets }
@@ -167,6 +170,7 @@ end-struct associative-map%
 ;
 
 : associative-map-set { map entry value -- previous }
+    assert( entry 0<> )
     map associative-map-#buckets @ entry over mod
     ( #buckets initial )
     swap { #buckets }
@@ -194,4 +198,22 @@ end-struct associative-map%
         1+ #buckets mod
     LOOP
     assert( ." Unable to find spot for entry" false )
+;
+
+struct
+    cell% field list-length
+    cell% 32 * field list-data
+end-struct list32%
+
+: make-list ( -- list )
+    list32% %alloc
+    dup list32% %size erase
+;
+
+: list32-append { list v -- }
+    list list-length @ 
+    assert( dup 32 < )
+    cells
+    list list-data + v swap !
+    1 list list-length +!
 ;
