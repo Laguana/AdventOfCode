@@ -572,7 +572,7 @@ end-struct matrix%
     day-10-precomputed-states @ parity 1+ associative-map-lookup
     invert if
         \ no way to reach this state
-        ." Bailing, no way to satisfy " parity . cr
+        \ ." Bailing, no way to satisfy " parity . cr
         exit
     endif
     { button-list }
@@ -625,16 +625,27 @@ end-struct matrix%
             \ ok, we have our new goal
             machine rec-goal recurse
             \ ." Returning from recusion" .S cr
-            2 * 
-            buttons count-bits-set +
-            \ ." added cost" .S cr
-            umin
+            dup -1 <> if
+                2 * 
+                buttons count-bits-set +
+                \ ." added cost" .S cr
+                umin
+            else
+                drop
+            endif
         endif
 
         ( best-so-far )
 
         rec-goal dp !
     LOOP
+    
+    \ ." joltage goal "
+    \ machine machine-num-lights @ 0 DO
+    \     joltage-goal i cells + @ .
+    \ LOOP
+    \ .S cr
+
 ;
 
 : precompute-state-reachability { machine -- }
@@ -685,8 +696,9 @@ end-struct matrix%
         HERE >r
         read-machine
         dup precompute-state-reachability
-        dup machine-desired-power solve-power-rec +
-        ." top level step " .S cr
+        dup machine-desired-power solve-power-rec 
+        \ ." top level step: " day-10-buf 30 type .S cr 
+        +
         ['] free-list32 day-10-precomputed-states @ for-each-associative-map
         day-10-precomputed-states @ free-associative-map
         r> dp !
@@ -719,7 +731,7 @@ end-struct matrix%
   close-file throw
 ;
 
-( Expect to get ? )
+( Expect to get 17848 )
 : do-day-10-part-2
   s" day10.in" r/o open-file throw ( -- fd )
   >r
